@@ -141,6 +141,9 @@
   <ItemGroup>
     <ClCompile Include="reservoir_ESN.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="reservoir_layer.hpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
