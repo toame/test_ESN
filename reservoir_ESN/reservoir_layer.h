@@ -1,4 +1,4 @@
-#include <algorithm>
+﻿#include <algorithm>
 #include <cassert>
 #include <random>
 #include <vector>
@@ -11,7 +11,7 @@ class reservoir_layer {
 public:
 	unsigned int unit_size;								//　ノード数
 	unsigned int connection_degree;						//	1ユニット当たりの接続数	(ノード数の1割程度で精度が飽和する）
-	double input_signal_factor;						//	入力の強さ
+	double input_signal_factor;							//	入力の強さ
 	double weight_factor;								//	ユニット間接続の強さ
 	std::vector<std::vector<double>> weight_reservoir;	//  リザーバー層の結合重み
 	std::vector<std::vector<int>> adjacency_list;		//  グラフにおける隣接リスト(隣接リスト？→https://qiita.com/drken/items/4a7869c5e304883f539b)
@@ -25,8 +25,8 @@ public:
 
 	reservoir_layer();
 	reservoir_layer(const int unit_size, const int connection_degree, const double iss_factor, const double weight_factor, const double p,
-		double (*nonlinear)(double), const unsigned int seed = 0, const int wash_out = 500);
-	
+		double (*nonlinear)(double), const unsigned int seed, const int wash_out);
+
 	void generate_reservoir();
 	void reservoir_update(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node, const int t_size);
 	bool ESP_check(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node);

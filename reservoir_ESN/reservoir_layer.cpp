@@ -1,10 +1,10 @@
-#include "reservoir_layer.h"
-reservoir_layer::reservoir_layer() {}
+ï»¿#include "reservoir_layer.h"
+//reservoir_layer::reservoir_layer() {}
 reservoir_layer::reservoir_layer(const int unit_size, const int connection_degree, const double iss_factor, const double weight_factor, const double p,
-	double (*nonlinear)(double), const unsigned int seed = 0, const int wash_out = 500) {
+	double (*nonlinear)(double), unsigned int seed = 0, const int wash_out = 500) {
 	this->unit_size = unit_size;
 	this->connection_degree = connection_degree;
-	this->input_signal_strength = iss_factor;
+	this->input_signal_factor = iss_factor;
 	this->weight_factor = weight_factor;
 	this->p = p;
 	this->seed = seed;
@@ -23,7 +23,7 @@ void reservoir_layer::generate_reservoir() {
 
 	std::vector<int> permutation(unit_size);
 	std::iota(permutation.begin(), permutation.end(), 1);
-	//ƒŠƒU[ƒo[‘w‚ÌŒ‹‡‚ğƒ‰ƒ“ƒ_ƒ€‚É¶¬
+	//ãƒªã‚¶ãƒ¼ãƒãƒ¼å±¤ã®çµåˆã‚’ãƒ©ãƒ³ãƒ€ãƒ ã«ç”Ÿæˆ
 	for (int n = 1; n <= unit_size; n++) {
 		std::shuffle(permutation.begin(), permutation.end(), mt);
 		for (int k = 1; k <= connection_degree; k++) {
@@ -31,7 +31,7 @@ void reservoir_layer::generate_reservoir() {
 		}
 	}
 
-	//Šeƒm[ƒh‚ªüŒ`‚©”ñüŒ`‚©‚ğŒˆ’è 0->üŒ` 1->”ñüŒ`
+	//å„ãƒãƒ¼ãƒ‰ãŒç·šå½¢ã‹éç·šå½¢ã‹ã‚’æ±ºå®š 0->ç·šå½¢ 1->éç·šå½¢
 	for (int n = 1; n <= unit_size; n++) {
 		if (permutation[n] <= unit_size * p)
 			node_type[n] = NON_LINEAR;
@@ -40,19 +40,19 @@ void reservoir_layer::generate_reservoir() {
 	}
 
 	for (int n = 1; n <= unit_size; n++) {
-		//ƒŠƒU[ƒo[‘w‚ÌŒ‹‡d‚İ‚ğŒˆ’è
+		//ãƒªã‚¶ãƒ¼ãƒãƒ¼å±¤ã®çµåˆé‡ã¿ã‚’æ±ºå®š
 		weight_reservoir[n][0] = input_signal_factor * weight_factor * rand_minus1toplus1(mt);
 		for (int k = 1; k <= connection_degree; k++)
 			weight_reservoir[n][k] = weight_factor * (1.0 / sqrt(connection_degree)) * (rand_0or1(mt) * 2 - 1);
 
-		// “ü—Í‘w‚ÌŒ‹‡d‚İ‚ğŒˆ’è
+		// å…¥åŠ›å±¤ã®çµåˆé‡ã¿ã‚’æ±ºå®š
 		input_signal_strength[n] = weight_factor * input_signal_factor * (rand_0or1(mt) * 2 - 1);
 	}
 }
-/** ƒŠƒU[ƒo[‘w‚ğŠÔ”­“W‚³‚¹‚é
-	 * input_signal “ü—ÍM†
-	 * output_node[t][n] t‚É‚¨‚¯‚én”Ô–Ú‚Ìƒm[ƒh‚Ìo—Í
-	 * t_size ƒXƒeƒbƒv”
+/** ãƒªã‚¶ãƒ¼ãƒãƒ¼å±¤ã‚’æ™‚é–“ç™ºå±•ã•ã›ã‚‹
+	 * input_signal å…¥åŠ›ä¿¡å·
+	 * output_node[t][n] æ™‚åˆ»tã«ãŠã‘ã‚‹nç•ªç›®ã®ãƒãƒ¼ãƒ‰ã®å‡ºåŠ›
+	 * t_size ã‚¹ãƒ†ãƒƒãƒ—æ•°
 	 **/
 void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node, const int t_size) {
 	std::uniform_real_distribution<> rand_minus1toplus1(-1, 1);
@@ -71,13 +71,13 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 		for (int n = 1; n <= unit_size; n++) output_node[t + 1][n] = activation_function(input_sum_node[n], node_type[n]);
 	}
 }
-// ESP(Echo State Property)‚Ì—L–³‚ğƒ`ƒFƒbƒN‚·‚é
+// ESP(Echo State Property)ã®æœ‰ç„¡ã‚’ãƒã‚§ãƒƒã‚¯ã™ã‚‹
 bool reservoir_layer::ESP_check(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node) {
 	auto dummy_output_node = std::vector<std::vector<double>>(wash_out + 1, std::vector<double>(unit_size + 1, 0));
 	dummy_output_node[0][0] = 1.0;
 	for (int n = 1; n <= unit_size; n++) output_node[0][n] = 1.0;
 
-	// ESP‚Ìƒ`ƒFƒbƒNCdummy‚ğ‚Ç‚Ì‚æ‚¤‚È‰Šúó‘Ô‚Ån‚ß‚é‚©–¢Œˆ’è@‚Æ‚è‚ ‚¦‚¸‚Í‘Sƒm[ƒh1‚É‚µ‚Ä‚¢‚é
+	// ESPã®ãƒã‚§ãƒƒã‚¯æ™‚ï¼Œdummyã‚’ã©ã®ã‚ˆã†ãªåˆæœŸçŠ¶æ…‹ã§å§‹ã‚ã‚‹ã‹æœªæ±ºå®šã€€ã¨ã‚Šã‚ãˆãšã¯å…¨ãƒãƒ¼ãƒ‰1ã«ã—ã¦ã„ã‚‹
 	// for(int n = 1; n <= unit_size; n++) dummy_output_node[0][n] = rand_minus1toplus1(mt);
 
 	std::vector<double> input_sum_node(unit_size + 1, 0);
