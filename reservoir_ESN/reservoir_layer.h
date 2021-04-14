@@ -14,7 +14,7 @@ public:
 	double input_signal_factor;							//	入力の強さ
 	double weight_factor;								//	ユニット間接続の強さ
 	std::vector<std::vector<double>> weight_reservoir;	//  リザーバー層の結合重み
-	std::vector<std::vector<int>> adjacency_list;		//  グラフにおける隣接リスト(隣接リスト？→https://qiita.com/drken/items/4a7869c5e304883f539b)
+	std::vector<std::vector<int>> adjacency_list;		//  グラフにおける隣接リスト(隣接リスト:https://qiita.com/drken/items/4a7869c5e304883f539b)
 	std::vector<double> input_signal_strength;			//  入力層の重み結合の強さベクトル
 	unsigned int seed;									//	リザーバーの構造を決定するシード値（構造のシードと重みのシードなどの分割をしてもいいかも）
 	double p;											//	ノードで使用される活性化関数の非線形の割合
@@ -29,7 +29,7 @@ public:
 
 	void generate_reservoir();
 	void reservoir_update(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node, const int t_size);
-	bool ESP_check(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node);
+	bool is_echo_state_property(const std::vector<double>& input_signal);
 	double activation_function(const double x, const int type);
 
 };

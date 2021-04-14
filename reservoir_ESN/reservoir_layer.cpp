@@ -31,7 +31,7 @@ void reservoir_layer::generate_reservoir() {
 		}
 	}
 
-	//各ノードが線形か非線形かを決定 0->線形 1->非線形
+	//各ノードが線形か非線形かを決定
 	for (int n = 1; n <= unit_size; n++) {
 		if (permutation[n] <= unit_size * p)
 			node_type[n] = NON_LINEAR;
@@ -71,40 +71,26 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 		for (int n = 1; n <= unit_size; n++) output_node[t + 1][n] = activation_function(input_sum_node[n], node_type[n]);
 	}
 }
-// ESP(Echo State Property)の有無をチェックする
-bool reservoir_layer::ESP_check(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node) {
-	auto dummy_output_node = std::vector<std::vector<double>>(wash_out + 1, std::vector<double>(unit_size + 1, 0));
-	dummy_output_node[0][0] = 1.0;
-	for (int n = 1; n <= unit_size; n++) output_node[0][n] = 1.0;
+// Echo State Property(ESP)の有無をチェックする
+// Echo State Propertyを持つリザーバーであるとは、リザーバーの持つノードの初期値に依存しない状態を言う。
+//
+bool reservoir_layer::is_echo_state_property(const std::vector<double>& input_signal) {
+	auto output_node1 = std::vector<std::vector<double>>(wash_out + 1, std::vector<double>(unit_size + 1, 0));
+	auto output_node2 = std::vector<std::vector<double>>(wash_out + 1, std::vector<double>(unit_size + 1, 0));
 
-	// ESPのチェック時，dummyをどのような初期状態で始めるか未決定　とりあえずは全ノード1にしている
-	// for(int n = 1; n <= unit_size; n++) dummy_output_node[0][n] = rand_minus1toplus1(mt);
-
-	std::vector<double> input_sum_node(unit_size + 1, 0);
-	for (int t = 0; t <= wash_out; t++) {
-		for (int n = 1; n <= unit_size; n++) {
-			input_sum_node[n] = input_signal_strength[n] * input_signal[t];
-			for (int k = 1; k <= connection_degree; k++) input_sum_node[n] += weight_reservoir[n][k] * dummy_output_node[t][adjacency_list[n][k]];
-			input_sum_node[n] += weight_reservoir[n][0] * dummy_output_node[t][0];
-		}
-		dummy_output_node[t + 1][0] = 1.0;
-		for (int n = 1; n <= unit_size; n++) dummy_output_node[t + 1][n] = activation_function(input_sum_node[n], node_type[n]);
-	}
+	reservoir_update(input_signal, output_node1, wash_out);
+	reservoir_update(input_signal, output_node2, wash_out);
 
 	double err_sum = 0.0;
 	for (int t = wash_out - 9; t <= wash_out; t++) {
 		for (int n = 1; n <= unit_size; n++) {
-			double err = std::abs(output_node[t][n] - dummy_output_node[t][n]);
+			const double err = (output_node1[t][n] - output_node2[t][n]);
 			err_sum += err * err;
 		}
 	}
+	// ノード初期値によって状態が等しくなるならば、EchoStatePropertyを持つ
 	double err_ave = err_sum / (unit_size * 10);
-	if (err_ave <= 0.1) {
-		return true;
-	}
-	else {
-		return false;
-	}
+	return err_ave <= 0.1;
 }
 
 double reservoir_layer::activation_function(const double x, const int type) {
