@@ -56,10 +56,8 @@ void reservoir_layer::generate_reservoir() {
 	 **/
 void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node, const int t_size) {
 	std::uniform_real_distribution<> rand_minus1toplus1(-1, 1);
-
 	output_node[0][0] = 1.0;
 	for (int n = 1; n <= unit_size; n++) output_node[0][n] = rand_minus1toplus1(mt);
-
 	std::vector<double> input_sum_node(unit_size + 1, 0);
 	for (int t = 0; t <= t_size; t++) {
 		for (int n = 1; n <= unit_size; n++) {
@@ -75,8 +73,8 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 // Echo State Propertyを持つリザーバーであるとは、リザーバーの持つノードの初期値に依存しない状態を言う。
 //
 bool reservoir_layer::is_echo_state_property(const std::vector<double>& input_signal) {
-	auto output_node1 = std::vector<std::vector<double>>(wash_out + 1, std::vector<double>(unit_size + 1, 0));
-	auto output_node2 = std::vector<std::vector<double>>(wash_out + 1, std::vector<double>(unit_size + 1, 0));
+	auto output_node1 = std::vector<std::vector<double>>(wash_out + 2, std::vector<double>(unit_size + 1, 0));
+	auto output_node2 = std::vector<std::vector<double>>(wash_out + 2, std::vector<double>(unit_size + 1, 0));
 
 	reservoir_update(input_signal, output_node1, wash_out);
 	reservoir_update(input_signal, output_node2, wash_out);

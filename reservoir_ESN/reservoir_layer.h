@@ -1,4 +1,5 @@
-﻿#include <algorithm>
+﻿#include <iostream>
+#include <algorithm>
 #include <cassert>
 #include <random>
 #include <vector>
