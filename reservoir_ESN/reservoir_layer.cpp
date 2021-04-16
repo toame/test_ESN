@@ -18,6 +18,7 @@ reservoir_layer::reservoir_layer(const int unit_size, const int connection_degre
 }
 
 void reservoir_layer::generate_reservoir() {
+
 	std::uniform_real_distribution<> rand_minus1toplus1(-1, 1);
 	std::uniform_int_distribution<> rand_0or1(0, 1);
 
@@ -55,6 +56,7 @@ void reservoir_layer::generate_reservoir() {
 	 * t_size ステップ数
 	 **/
 void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node, const int t_size) {
+	mt.seed(seed);
 	std::uniform_real_distribution<> rand_minus1toplus1(-1, 1);
 	output_node[0][0] = 1.0;
 	for (int n = 1; n <= unit_size; n++) output_node[0][n] = rand_minus1toplus1(mt);
@@ -80,7 +82,7 @@ bool reservoir_layer::is_echo_state_property(const std::vector<double>& input_si
 	reservoir_update(input_signal, output_node2, wash_out);
 
 	double err_sum = 0.0;
-	for (int t = wash_out - 9; t <= wash_out; t++) {
+	for (int t = wash_out - 99; t <= wash_out; t++) {
 		for (int n = 1; n <= unit_size; n++) {
 			const double err = (output_node1[t][n] - output_node2[t][n]);
 			err_sum += err * err;
@@ -88,6 +90,7 @@ bool reservoir_layer::is_echo_state_property(const std::vector<double>& input_si
 	}
 	// ノード初期値によって状態が等しくなるならば、EchoStatePropertyを持つ
 	double err_ave = err_sum / (unit_size * 10);
+	//std::cerr << err_sum << std::endl;
 	return err_ave <= 0.1;
 }
 
