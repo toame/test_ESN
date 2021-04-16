@@ -20,10 +20,8 @@ int main(void) {
 		if (!reservoir_layer.is_echo_state_property(input_signal)) continue;
 		std::vector<std::vector<double>> L(210, std::vector<double>(210, 0.0));
 		std::vector<double> d(210, 0.0);
-		std::vector<double> b(110, 0.0);
-		std::vector<double> x(110, 0.0);
 		output_learning.generate_simultaneous_linear_equationsA(output_node, 500, 1000, 100);
-		output_learning.generate_simultaneous_linear_equationsb(b, output_node, teacher_signal, 500, 1000, 100);
+		output_learning.generate_simultaneous_linear_equationsb(output_node, teacher_signal, 500, 1000, 100);
 		for (int i = 0; i < 1; i++) {
 			for (int j = 0; j < 100; j++) {
 				output_learning.A[j][j] += 1e-12;
@@ -31,14 +29,18 @@ int main(void) {
 			output_learning.IncompleteCholeskyDecomp2(L, d, 100);
 			double eps = 1e-12;
 			int itr = 100;
-			output_learning.ICCGSolver(L, d, b, x, 100, itr, eps);
+			output_learning.ICCGSolver(L, d, 100, itr, eps);
 			std::cout << eps << " " << itr << std::endl;
+			double error_sum = 0.0;
 			for (int t = 500; t < 1000; t++) {
-				const double reservoir_predict_signal = cblas_ddot(100 + 1, x.data(), 1, output_node[t + 1].data(), 1);
+				const double reservoir_predict_signal = cblas_ddot(100 + 1, output_learning.w.data(), 1, output_node[t + 1].data(), 1);
 				if (t == 510) {
 					std::cout << reservoir_predict_signal << " " << teacher_signal[t] << std::endl;
 				}
+				const double tmp = reservoir_predict_signal - teacher_signal[t];
+				error_sum += tmp * tmp;
 			}
+			std::cout << error_sum << std::endl;
 		}
 		std::cout << k << std::endl;
 	}

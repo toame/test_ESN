@@ -41,8 +41,9 @@ void output_learning::generate_simultaneous_linear_equationsA(const std::vector<
 	}
 }
 //連立一次方程式Aw=bのbを生成
-void output_learning::generate_simultaneous_linear_equationsb(std::vector<double>& b, const std::vector<std::vector<double>>& output_node,
+void output_learning::generate_simultaneous_linear_equationsb(const std::vector<std::vector<double>>& output_node,
 	const std::vector<double>& yt_s, const int wash_out, const int step, const int n_size) {
+	b.resize(n_size + 1);
 	for (int n1 = 0; n1 <= n_size; n1++) {
 		b[n1] = 0.0;
 	}
@@ -129,17 +130,17 @@ inline void output_learning::ICRes(const std::vector<std::vector<double>>& L, co
  * @return 1:成功,0:失敗
  */
 int output_learning::ICCGSolver(const std::vector<std::vector<double>>& L, const std::vector<double>& d,
-	const std::vector<double>& b, std::vector<double>& x, int n, int& max_iter, double& eps) {
+	int n, int& max_iter, double& eps) {
 	if (n <= 0) return 0;
 
 	std::vector<double> r(n), p(n), y(n), r2(n);
-	x.assign(n, 0.0);
+	w.assign(n, 0.0);
 
 	// 第0近似解に対する残差の計算
 	for (int i = 0; i < n; ++i) {
 		double ax = 0.0;
 		for (int j = 0; j < n; ++j) {
-			ax += A[i][j] * x[j];
+			ax += A[i][j] * w[j];
 		}
 		r[i] = b[i] - ax;
 	}
@@ -163,7 +164,7 @@ int output_learning::ICCGSolver(const std::vector<std::vector<double>>& L, const
 
 		// 解x、残差rの更新
 		for (int i = 0; i < n; ++i) {
-			x[i] += alpha * p[i];
+			w[i] += alpha * p[i];
 			r[i] -= alpha * y[i];
 		}
 
