@@ -91,25 +91,6 @@ int output_learning::IncompleteCholeskyDecomp2(int n) {
 	return 1;
 }
 
-// p_0 = (LDL^T)^-1 r_0 ‚ÌŒvŽZ
-inline void output_learning::ICRes(const std::vector<double>& r, std::vector<double>& u,int n) {
-	std::vector<double> y(n);
-	for (int i = 0; i < n; ++i) {
-		double rly = r[i];
-		for (int j = 0; j < i; ++j) {
-			rly -= L[i][j] * y[j];
-		}
-		y[i] = rly / L[i][i];
-	}
-
-	for (int i = n - 1; i >= 0; --i) {
-		double lu = 0.0;
-		for (int j = i + 1; j < n; ++j) {
-			lu += L[j][i] * u[j];
-		}
-		u[i] = y[i] - d[i] * lu;
-	}
-}
 
 
 /*!
@@ -145,11 +126,18 @@ int output_learning::ICCGSolver(int n, int& max_iter, double& eps) {
 
 	double e = 0.0;
 	int k;
+	std::vector<double> B(n * n);
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			B[i * n + j] = A[i][j];
+		}
+	}
 	for (k = 0; k < max_iter; ++k) {
 		// y = AP ‚ÌŒvŽZ
-		for (int i = 0; i < n; ++i) {
-			y[i] = dot(A[i], p, n);
-		}
+		//for (int i = 0; i < n; ++i) {
+		//	y[i] = dot(A[i], p, n);
+		//}
+		cblas_dgemv(CblasRowMajor, CblasNoTrans, n, n, 1.0, B.data(), n, p.data(), 1, 0.0, y.data(), 1);
 
 		// alpha = r*r/(P*AP)‚ÌŒvŽZ
 		alpha = rr0 / dot(p, y, n);
