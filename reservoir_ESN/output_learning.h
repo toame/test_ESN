@@ -1,11 +1,13 @@
 #include <cblas.h>
+#include <vector>
 class output_learning {
 public:
+    std::vector<std::vector<double>> A;
     std::vector<double> w;
     output_learning();
 
     //連立一次方程式Aw=bのAを生成
-    void generate_simultaneous_linear_equationsA(std::vector<std::vector<double>>& A, const std::vector<std::vector<double>>& output_node, const int wash_out, const int step, const int n_size);
+    void generate_simultaneous_linear_equationsA(const std::vector<std::vector<double>>& output_node, const int wash_out, const int step, const int n_size);
    
     //連立一次方程式Aw=bのbを生成
     void generate_simultaneous_linear_equationsb(std::vector<double>& b, const std::vector<std::vector<double>>& output_node, const std::vector<double>& yt_s, const int wash_out, const int step, const int n_size);
@@ -15,7 +17,7 @@ public:
     // void Learning(std::vector<double>& w, const std::vector<std::vector<double>>& A, const std::vector<double>& b, const double lambda, const int n_size);
 
     // 不完全コレスキー分解
-    int IncompleteCholeskyDecomp2(const std::vector<std::vector<double>>& A, std::vector<std::vector<double>>& L, std::vector<double>& d, int n);
+    int IncompleteCholeskyDecomp2(std::vector<std::vector<double>>& L, std::vector<double>& d, int n);
     
 
     // p_0 = (LDL^T)^-1 r_0 の計算
@@ -34,7 +36,7 @@ public:
      * @param[inout] eps 許容誤差(反復終了後,実際の誤差を返す)
      * @return 1:成功,0:失敗
      */
-    int ICCGSolver(const std::vector<std::vector<double>>& A, const std::vector<std::vector<double>>& L, const std::vector<double>& d, const std::vector<double>& b, std::vector<double>& x, int n, int& max_iter, double& eps);
+    int ICCGSolver(const std::vector<std::vector<double>>& L, const std::vector<double>& d, const std::vector<double>& b, std::vector<double>& x, int n, int& max_iter, double& eps);
 
     /*!
      * 共役勾配法によりA・x=bを解く

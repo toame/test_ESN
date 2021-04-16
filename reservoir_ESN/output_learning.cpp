@@ -10,11 +10,11 @@
 
 #include "output_learning.h"
 
-std::vector<double> w;
 output_learning::output_learning() {}
 
 //連立一次方程式Aw=bのAを生成
-void output_learning::generate_simultaneous_linear_equationsA(std::vector<std::vector<double>>& A, const std::vector<std::vector<double>>& output_node, const int wash_out, const int step, const int n_size) {
+void output_learning::generate_simultaneous_linear_equationsA(const std::vector<std::vector<double>>& output_node, const int wash_out, const int step, const int n_size) {
+	A.resize(n_size + 1, std::vector<double>(n_size + 1));
 	for (int n1 = 0; n1 <= n_size; n1++) {
 		for (int n2 = n1; n2 <= n_size; n2++) {
 			A[n1][n2] = 0.0;
@@ -73,7 +73,7 @@ void output_learning::generate_simultaneous_linear_equationsb(std::vector<double
 // }
 
 // 不完全コレスキー分解
-int output_learning::IncompleteCholeskyDecomp2(const std::vector<std::vector<double>>& A, std::vector<std::vector<double>>& L, std::vector<double>& d, int n) {
+int output_learning::IncompleteCholeskyDecomp2(std::vector<std::vector<double>>& L, std::vector<double>& d, int n) {
 	if (n <= 0) return 0;
 
 	L[0][0] = A[0][0];
@@ -128,7 +128,7 @@ inline void output_learning::ICRes(const std::vector<std::vector<double>>& L, co
  * @param[inout] eps 許容誤差(反復終了後,実際の誤差を返す)
  * @return 1:成功,0:失敗
  */
-int output_learning::ICCGSolver(const std::vector<std::vector<double>>& A, const std::vector<std::vector<double>>& L, const std::vector<double>& d,
+int output_learning::ICCGSolver(const std::vector<std::vector<double>>& L, const std::vector<double>& d,
 	const std::vector<double>& b, std::vector<double>& x, int n, int& max_iter, double& eps) {
 	if (n <= 0) return 0;
 
