@@ -64,11 +64,13 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 	for (int t = 0; t <= t_size; t++) {
 		for (int n = 1; n <= unit_size; n++) {
 			input_sum_node[n] = input_signal_strength[n] * input_signal[t];
-			for (int k = 1; k <= connection_degree; k++) input_sum_node[n] += weight_reservoir[n][k] * output_node[t][adjacency_list[n][k]];
+			for (int k = 1; k <= connection_degree; k++) 
+				input_sum_node[n] += weight_reservoir[n][k] * output_node[t][adjacency_list[n][k]];
 			input_sum_node[n] += weight_reservoir[n][0] * output_node[t][0];
 		}
 		output_node[t + 1][0] = 1.0;
-		for (int n = 1; n <= unit_size; n++) output_node[t + 1][n] = activation_function(input_sum_node[n], node_type[n]);
+		for (int n = 1; n <= unit_size; n++) 
+			output_node[t + 1][n] = activation_function(input_sum_node[n], node_type[n]);
 	}
 }
 // Echo State Property(ESP)の有無をチェックする

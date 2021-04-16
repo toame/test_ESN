@@ -16,9 +16,9 @@ double sinc(const double x) {
 	return sin(x) / x;
 }
 int main(void) {
-	
+
 	const int unit_size = 100;
-	const int step = 2000;
+	const int step = 5000;
 	const int wash_out = 500;
 	std::vector<std::vector<double>> input_signal(PHASE_NUM), teacher_signal(PHASE_NUM);
 	for (int phase = 0; phase < PHASE_NUM; phase++) {
@@ -29,11 +29,12 @@ int main(void) {
 
 	std::chrono::system_clock::time_point  start, end; // 型は auto で可
 	for (int loop = 0; loop < 10; loop++) {
-		for (int ite_p = 0; ite_p <= 10; ite_p++) {
+		for (int ite_p = 1; ite_p <= 10; ite_p++) {
 			double opt_nmse = 1e+10;
 			double opt_input_signal_factor = 0;
 			double opt_weight_factor = 0;
 			double opt_lm2 = 0;
+			double test_nmse = 1e+10;
 			std::vector<double> opt_w;
 			for (int k = 0; k < 7 * 7; k++) {
 				output_learning output_learning;
@@ -50,9 +51,9 @@ int main(void) {
 					reservoir_layer1.reservoir_update(input_signal[phase], output_node[phase], step);
 					if (!reservoir_layer1.is_echo_state_property(input_signal[phase])) ok = false;
 				}
-				if (!ok) 
+				if (!ok)
 					continue;
-				
+
 				output_learning.generate_simultaneous_linear_equationsA(output_node[TRAIN], wash_out, step, unit_size);
 				output_learning.generate_simultaneous_linear_equationsb(output_node[TRAIN], teacher_signal[TRAIN], wash_out, step, unit_size);
 				double opt_lm = 0;
@@ -74,18 +75,14 @@ int main(void) {
 							opt_input_signal_factor = input_signal_factor;
 							opt_weight_factor = weight_factor;
 							opt_lm2 = opt_lm;
-							opt_w = output_learning.w;
+
+							std::vector<std::vector<double>> output_node0(step + 10, std::vector<double>(unit_size + 1, 0));
+							reservoir_layer1.reservoir_update(input_signal[TEST], output_node0, step);
+							test_nmse = calc_nmse(teacher_signal[TEST], output_learning.w, output_node0, unit_size, wash_out, step, false);
+
 						}
 					}
 				}
-				
-				//reservoir_layer reservoir_layer2(unit_size, unit_size / 10, opt_input_signal_factor, opt_weight_factor, ite_p * 0.1, sinc, loop, wash_out);
-				//reservoir_layer2.generate_reservoir();
-				//std::vector<std::vector<double>> output_node0(step + 10, std::vector<double>(unit_size + 1, 0));
-				//reservoir_layer2.reservoir_update(input_signal[TEST], output_node0, step);
-				//const double nmse = calc_nmse(teacher_signal[TEST], opt_w, output_node0, unit_size, wash_out, step);
-				//std::cout << ite_p * 0.1 << "," << opt_input_signal_factor << "," << opt_weight_factor << "," << opt_lm2 << "," << opt_nmse << "," << nmse << std::endl;
-
 
 				end = std::chrono::system_clock::now();  // 計測終了時間
 				double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(); //処理に要した時間をミリ秒に変換
@@ -94,47 +91,7 @@ int main(void) {
 
 			}
 
-			reservoir_layer reservoir_layer2(unit_size, unit_size / 10, opt_input_signal_factor, opt_weight_factor, ite_p * 0.1, sinc, loop, wash_out);
-			reservoir_layer2.generate_reservoir();
-			std::vector<std::vector<double>> output_node(step + 10, std::vector<double>(unit_size + 1, 0));
-			reservoir_layer2.reservoir_update(input_signal[TEST], output_node, step);
-			const double nmse = calc_nmse(teacher_signal[TEST], opt_w, output_node, unit_size, wash_out, step, false);
-			std::cout << ite_p * 0.1 << "," << opt_input_signal_factor << "," << opt_weight_factor << "," << opt_lm2 << "," << opt_nmse << "," << nmse << std::endl;
-
-			if (!reservoir_layer2.is_echo_state_property(input_signal[TEST]) || nmse > 2.0) {
-				std::cout << "failed... ";
-				std::cout << ite_p * 0.1 << "," << opt_input_signal_factor << "," << opt_weight_factor << "," << opt_lm2 << "," << opt_nmse << "," << nmse << std::endl;
-
-				for (int c = 0; c < 10; c++) {
-					reservoir_layer reservoir_layer2(unit_size, unit_size / 10, opt_input_signal_factor, opt_weight_factor, ite_p * 0.1, sinc, loop, wash_out);
-					reservoir_layer2.generate_reservoir();
-					std::vector<std::vector<double>> output_node0(step + 10, std::vector<double>(unit_size + 1, 0));
-					reservoir_layer2.reservoir_update(input_signal[TEST], output_node0, step);
-					int cnt = 0;
-					for (int i = 0; i < output_node0.size(); i++) {
-						for (int j = 0; j < output_node0[i].size(); j++) {
-							if (output_node0[i][j] != output_node[i][j]) {
-								cnt++;
-								std::cerr << i << " " << j << " " << output_node0[i][j] << " " << output_node[i][j] << std::endl;
-								if (cnt >= 20) break;
-							}
-							if (cnt >= 20) break;
-						}
-						if (cnt >= 20) break;
-					}
-				}
-
-				reservoir_layer reservoir_layer2(unit_size, unit_size / 10, opt_input_signal_factor, opt_weight_factor, ite_p * 0.1, sinc, loop, wash_out);
-				reservoir_layer2.generate_reservoir();
-				std::vector<std::vector<double>> output_node(step + 10, std::vector<double>(unit_size + 1, 0));
-				reservoir_layer2.reservoir_update(input_signal[VAL], output_node, step);
-				double nmse = calc_nmse(teacher_signal[VAL], opt_w, output_node, unit_size, wash_out, step, true);
-				std::cerr << nmse << " ";
-				reservoir_layer2.reservoir_update(input_signal[TRAIN], output_node, step);
-				 nmse = calc_nmse(teacher_signal[TRAIN], opt_w, output_node, unit_size, wash_out, step, true);
-				std::cerr << nmse << std::endl;
-				//return 0;
-			}
+			std::cout << ite_p * 0.1 << "," << opt_input_signal_factor << "," << opt_weight_factor << "," << opt_lm2 << "," << opt_nmse << "," << test_nmse << std::endl;
 		}
 	}
 }
