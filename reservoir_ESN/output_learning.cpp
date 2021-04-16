@@ -7,6 +7,7 @@
 #include <iterator>
 #include <random>
 #include <vector>
+#include <iostream>
 
 #include "output_learning.h"
 
@@ -14,29 +15,21 @@ output_learning::output_learning() {}
 
 //連立一次方程式Aw=bのAを生成
 void output_learning::generate_simultaneous_linear_equationsA(const std::vector<std::vector<double>>& output_node, const int wash_out, const int step, const int n_size) {
+	std::vector<std::vector<double>> C(n_size + 1, std::vector<double>(n_size + 1));
 	A.resize(n_size + 1, std::vector<double>(n_size + 1));
-	for (int n1 = 0; n1 <= n_size; n1++) {
-		for (int n2 = n1; n2 <= n_size; n2++) {
-			A[n1][n2] = 0.0;
-		}
-	}
-	int count = 0;
+	int count = step - wash_out;
+	std::vector<double> sub_output_node(count * (n_size + 1));
+	std::vector<double> B((n_size + 1) * (n_size + 1), 0.0);
 	for (int t = wash_out + 1; t <= step; t++) {
-		count++;
 		for (int n1 = 0; n1 <= n_size; n1++) {
-			for (int n2 = n1; n2 <= n_size; n2++) {
-				A[n1][n2] += output_node[t + 1][n1] * output_node[t + 1][n2];
-			}
+			sub_output_node[(t - wash_out - 1) * (n_size + 1) + n1] = output_node[t + 1][n1];
 		}
 	}
+
+	cblas_dgemm(CblasRowMajor, CblasTrans, CblasNoTrans, n_size + 1, n_size + 1, count, 1.0 / count, sub_output_node.data(), n_size + 1, sub_output_node.data(), n_size + 1, 0.0, B.data(), n_size + 1);
 	for (int n1 = 0; n1 <= n_size; n1++) {
 		for (int n2 = 0; n2 <= n_size; n2++) {
-			if (n2 < n1) A[n1][n2] = A[n2][n1];
-		}
-	}
-	for (int n1 = 0; n1 <= n_size; n1++) {
-		for (int n2 = 0; n2 <= n_size; n2++) {
-			A[n1][n2] /= count;
+			A[n1][n2] = B[n1 * (n_size + 1) + n2];
 		}
 	}
 }
@@ -74,9 +67,10 @@ void output_learning::generate_simultaneous_linear_equationsb(const std::vector<
 // }
 
 // 不完全コレスキー分解
-int output_learning::IncompleteCholeskyDecomp2(std::vector<std::vector<double>>& L, std::vector<double>& d, int n) {
+int output_learning::IncompleteCholeskyDecomp2(int n) {
 	if (n <= 0) return 0;
-
+	L.resize(n, std::vector<double>(n));
+	d.resize(n);
 	L[0][0] = A[0][0];
 	d[0] = 1.0 / L[0][0];
 
@@ -98,8 +92,7 @@ int output_learning::IncompleteCholeskyDecomp2(std::vector<std::vector<double>>&
 }
 
 // p_0 = (LDL^T)^-1 r_0 の計算
-inline void output_learning::ICRes(const std::vector<std::vector<double>>& L, const std::vector<double>& d, const std::vector<double>& r, std::vector<double>& u,
-	int n) {
+inline void output_learning::ICRes(const std::vector<double>& r, std::vector<double>& u,int n) {
 	std::vector<double> y(n);
 	for (int i = 0; i < n; ++i) {
 		double rly = r[i];
@@ -129,8 +122,7 @@ inline void output_learning::ICRes(const std::vector<std::vector<double>>& L, co
  * @param[inout] eps 許容誤差(反復終了後,実際の誤差を返す)
  * @return 1:成功,0:失敗
  */
-int output_learning::ICCGSolver(const std::vector<std::vector<double>>& L, const std::vector<double>& d,
-	int n, int& max_iter, double& eps) {
+int output_learning::ICCGSolver(int n, int& max_iter, double& eps) {
 	if (n <= 0) return 0;
 
 	std::vector<double> r(n), p(n), y(n), r2(n);
@@ -146,7 +138,7 @@ int output_learning::ICCGSolver(const std::vector<std::vector<double>>& L, const
 	}
 
 	// p_0 = (LDL^T)^-1 r_0 の計算
-	ICRes(L, d, r, p, n);
+	ICRes(r, p, n);
 
 	double rr0 = dot(r, p, n), rr1;
 	double alpha, beta;
@@ -169,7 +161,7 @@ int output_learning::ICCGSolver(const std::vector<std::vector<double>>& L, const
 		}
 
 		// (r*r)_(k+1)の計算
-		ICRes(L, d, r, r2, n);
+		ICRes(r, r2, n);
 		rr1 = dot(r, r2, n);
 
 		// 収束判定 (||r||<=eps)

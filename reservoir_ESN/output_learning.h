@@ -2,9 +2,8 @@
 #include <vector>
 class output_learning {
 public:
-    std::vector<std::vector<double>> A;
-    std::vector<double> b;
-    std::vector<double> w;
+    std::vector<std::vector<double>> A, L;
+    std::vector<double> d, b, w;
     output_learning();
 
     //連立一次方程式Aw=bのAを生成
@@ -18,11 +17,11 @@ public:
     // void Learning(std::vector<double>& w, const std::vector<std::vector<double>>& A, const std::vector<double>& b, const double lambda, const int n_size);
 
     // 不完全コレスキー分解
-    int IncompleteCholeskyDecomp2(std::vector<std::vector<double>>& L, std::vector<double>& d, int n);
+    int IncompleteCholeskyDecomp2(int n);
     
 
     // p_0 = (LDL^T)^-1 r_0 の計算
-    void ICRes(const std::vector<std::vector<double>>& L, const std::vector<double>& d, const std::vector<double>& r, std::vector<double>& u, int n);
+    void ICRes(const std::vector<double>& r, std::vector<double>& u, int n);
 
     // 内積を求める
     double dot(const std::vector<double> r1, const std::vector<double> r2, const int size);
@@ -37,7 +36,7 @@ public:
      * @param[inout] eps 許容誤差(反復終了後,実際の誤差を返す)
      * @return 1:成功,0:失敗
      */
-    int ICCGSolver(const std::vector<std::vector<double>>& L, const std::vector<double>& d, int n, int& max_iter, double& eps);
+    int ICCGSolver(int n, int& max_iter, double& eps);
 
     /*!
      * 共役勾配法によりA・x=bを解く
