@@ -45,22 +45,14 @@ double calc_mean_squared_average(const std::vector<double>& teacher_signal, cons
 		//const double reservoir_predict_signal = cblas_ddot(unit_size + 1, weight.data(), 1, output_node[t + 1].data(), 1);
 		double reservoir_predict_signal = 0.0;
 		for (int n = 0; n <= unit_size; n++) {
-			if (show && t == wash_out + 1 && n == 1) std::cerr << weight[n] << " " << output_node[t + 1][n] << std::endl;
 			reservoir_predict_signal += weight[n] * output_node[t + 1][n];
 		}
 		sum_squared_average += squared(teacher_signal[t] - reservoir_predict_signal);
-		//if (show && t < wash_out + 10) {
-		//	std::cerr << t << " " << teacher_signal[t] << " " << reservoir_predict_signal << std::endl;
-		//}
 	}
 	return sum_squared_average / (step - wash_out);
 }
 
 double calc_nmse(const std::vector<double>& teacher_signal, const std::vector<double>& weight,
 	const std::vector<std::vector<double>>& output_node, const int unit_size, const int wash_out, const int step, bool show) {
-	const double ret = (calc_mean_squared_average(teacher_signal, weight, output_node, unit_size, wash_out, step) / t_tt_calc(teacher_signal, wash_out, step));
-	//if (ret > 100) {
-		calc_mean_squared_average(teacher_signal, weight, output_node, unit_size, wash_out, step, show);
-	//}
-	return ret;
+	return (calc_mean_squared_average(teacher_signal, weight, output_node, unit_size, wash_out, step) / t_tt_calc(teacher_signal, wash_out, step));
 }

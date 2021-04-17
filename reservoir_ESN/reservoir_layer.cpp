@@ -1,5 +1,5 @@
 ﻿#include "reservoir_layer.h"
-//reservoir_layer::reservoir_layer() {}
+reservoir_layer::reservoir_layer() {}
 reservoir_layer::reservoir_layer(const int unit_size, const int connection_degree, const double iss_factor, const double weight_factor, const double p,
 	double (*nonlinear)(double), unsigned int seed = 0, const int wash_out = 500) {
 	this->unit_size = unit_size;
@@ -56,7 +56,7 @@ void reservoir_layer::generate_reservoir() {
 	 * t_size ステップ数
 	 **/
 void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node, const int t_size) {
-	mt.seed(seed);
+
 	std::uniform_real_distribution<> rand_minus1toplus1(-1, 1);
 	output_node[0][0] = 1.0;
 	for (int n = 1; n <= unit_size; n++) output_node[0][n] = rand_minus1toplus1(mt);
@@ -64,8 +64,13 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 	for (int t = 0; t <= t_size; t++) {
 		for (int n = 1; n <= unit_size; n++) {
 			input_sum_node[n] = input_signal_strength[n] * input_signal[t];
-			for (int k = 1; k <= connection_degree; k++) 
+			for (int k = 1; k <= connection_degree; k += 5) {
 				input_sum_node[n] += weight_reservoir[n][k] * output_node[t][adjacency_list[n][k]];
+				input_sum_node[n] += weight_reservoir[n][k + 1] * output_node[t][adjacency_list[n][k + 1]];
+				input_sum_node[n] += weight_reservoir[n][k + 2] * output_node[t][adjacency_list[n][k + 2]];
+				input_sum_node[n] += weight_reservoir[n][k + 3] * output_node[t][adjacency_list[n][k + 3]];
+				input_sum_node[n] += weight_reservoir[n][k + 4] * output_node[t][adjacency_list[n][k + 4]];
+			}
 			input_sum_node[n] += weight_reservoir[n][0] * output_node[t][0];
 		}
 		output_node[t + 1][0] = 1.0;
