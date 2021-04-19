@@ -13,7 +13,7 @@
 #define TEST (2)
 double sinc(const double x) {
 	if (x == 0) return 1.0;
-	return sin(x) / x;
+	return sin(PI * x) / (PI * x);
 }
 int main(void) {
 
@@ -23,7 +23,7 @@ int main(void) {
 	std::vector<std::vector<double>> input_signal(PHASE_NUM), teacher_signal(PHASE_NUM);
 	for (int phase = 0; phase < PHASE_NUM; phase++) {
 		generate_input_signal_random(input_signal[phase], -1.0, 2.0, step, phase + 100);
-		//task_for_function_approximation(input_signal[phase], teacher_signal[phase], 1.0, 8, step, phase);
+		//task_for_function_approximation(input_signal[phase], teacher_signal[phase], 0.5, 5, step, phase);
 		const int tau = 9;
 		generate_narma_task(input_signal[phase], teacher_signal[phase], tau, step);
 	}
@@ -45,7 +45,7 @@ int main(void) {
 			double test_nmse = 1e+10;
 			start = std::chrono::system_clock::now(); // 計測開始時間
 
-#pragma omp parallel for
+//#pragma omp parallel for
 			for (int k = 0; k < 11 * 11; k++) {
 
 				const double p = ite_p * 0.1;

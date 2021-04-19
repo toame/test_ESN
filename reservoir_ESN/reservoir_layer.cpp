@@ -106,6 +106,7 @@ double reservoir_layer::activation_function(const double x, const int type) {
 		return std::max(-100.0, std::min(100.0, x));
 	}
 	else if (type == NON_LINEAR) {
+		//std::cerr << x << " " << nonlinear(x) << std::endl;
 		return nonlinear(x);
 	}
 	assert(type != LINEAR && type != NON_LINEAR);
