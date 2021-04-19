@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <vector>
+#include <string>
 #include <cmath>
 #include <cblas.h>
 #include <chrono>
@@ -21,11 +22,21 @@ int main(void) {
 	const int step = 4000;
 	const int wash_out = 500;
 	std::vector<std::vector<double>> input_signal(PHASE_NUM), teacher_signal(PHASE_NUM);
+	const std::string task_name = "APPROX";
+	double d_alpha;
 	for (int phase = 0; phase < PHASE_NUM; phase++) {
 		generate_input_signal_random(input_signal[phase], -1.0, 2.0, step, phase + 100);
-		//task_for_function_approximation(input_signal[phase], teacher_signal[phase], 0.5, 5, step, phase);
-		const int tau = 9;
-		generate_narma_task(input_signal[phase], teacher_signal[phase], tau, step);
+		if (task_name == "NARMA") {
+			d_alpha = 0.01;
+			const int tau = 9;
+			generate_narma_task(input_signal[phase], teacher_signal[phase], tau, step);
+		}
+		else if(task_name == "APPROX") {
+			d_alpha = 0.5;
+			task_for_function_approximation(input_signal[phase], teacher_signal[phase], 1.5, 5, step, phase);
+
+		}
+		
 	}
 	//for (int i = 0; i < input_signal[0].size(); i++) {
 	//	std::cout << input_signal[0][i] << " " << teacher_signal[0][i] << std::endl;
@@ -49,7 +60,7 @@ int main(void) {
 			for (int k = 0; k < 11 * 11; k++) {
 
 				const double p = ite_p * 0.1;
-				const double input_signal_factor = ((k / 11) + 1) * 0.01;
+				const double input_signal_factor = ((k / 11) + 1) * d_alpha;
 				const double weight_factor = (k % 11 + 1) * 0.1;
 
 				reservoir_layer reservoir_layer1(unit_size, unit_size / 10, input_signal_factor, weight_factor, p, sinc, loop, wash_out);
@@ -67,7 +78,7 @@ int main(void) {
 			for (int k = 0; k < 11 * 11; k++) {
 				output_learning output_learning;
 				const double p = ite_p * 0.1;
-				const double input_signal_factor = ((k / 11) + 1) * 0.01;
+				const double input_signal_factor = ((k / 11) + 1) * d_alpha;
 				const double weight_factor = (k % 11 + 1) * 0.1;
 				output_learning.generate_simultaneous_linear_equationsA(output_node[k][TRAIN], wash_out, step, unit_size);
 				output_learning.generate_simultaneous_linear_equationsb(output_node[k][TRAIN], teacher_signal[TRAIN], wash_out, step, unit_size);
@@ -94,7 +105,7 @@ int main(void) {
 				for (int lm = 0; lm < 10; lm++) {
 					if (nmse[k][lm] < opt_nmse) {
 						opt_nmse = nmse[k][lm];
-						opt_input_signal_factor = ((k / 11) + 1) * 0.01;
+						opt_input_signal_factor = ((k / 11) + 1) * d_alpha;
 						opt_weight_factor = (k % 11 + 1) * 0.1;
 						opt_lm2 = lm;
 						opt_k = k;

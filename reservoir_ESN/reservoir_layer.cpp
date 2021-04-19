@@ -22,7 +22,7 @@ void reservoir_layer::generate_reservoir() {
 	std::uniform_real_distribution<> rand_minus1toplus1(-1, 1);
 	std::uniform_int_distribution<> rand_0or1(0, 1);
 
-	std::vector<int> permutation(unit_size);
+	std::vector<int> permutation(unit_size + 1);
 	std::iota(permutation.begin(), permutation.end(), 1);
 	//リザーバー層の結合をランダムに生成
 	for (int n = 1; n <= unit_size; n++) {
@@ -34,8 +34,9 @@ void reservoir_layer::generate_reservoir() {
 
 	//各ノードが線形か非線形かを決定
 	for (int n = 1; n <= unit_size; n++) {
-		if (permutation[n] <= unit_size * p)
+		if (permutation[n] <= unit_size * p) {
 			node_type[n] = NON_LINEAR;
+		}
 		else
 			node_type[n] = LINEAR;
 	}
@@ -74,8 +75,9 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 			input_sum_node[n] += weight_reservoir[n][0] * output_node[t][0];
 		}
 		output_node[t + 1][0] = 1.0;
-		for (int n = 1; n <= unit_size; n++) 
+		for (int n = 1; n <= unit_size; n++) {
 			output_node[t + 1][n] = activation_function(input_sum_node[n], node_type[n]);
+		}
 	}
 }
 // Echo State Property(ESP)の有無をチェックする
@@ -106,7 +108,6 @@ double reservoir_layer::activation_function(const double x, const int type) {
 		return std::max(-100.0, std::min(100.0, x));
 	}
 	else if (type == NON_LINEAR) {
-		//std::cerr << x << " " << nonlinear(x) << std::endl;
 		return nonlinear(x);
 	}
 	assert(type != LINEAR && type != NON_LINEAR);
