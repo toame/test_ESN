@@ -32,7 +32,7 @@ int main(void) {
 			generate_narma_task(input_signal[phase], teacher_signal[phase], tau, step);
 		}
 		else if(task_name == "APPROX") {
-			d_alpha = 0.5;
+			d_alpha = 2.0;
 			task_for_function_approximation(input_signal[phase], teacher_signal[phase], 1.5, 5, step, phase);
 
 		}
