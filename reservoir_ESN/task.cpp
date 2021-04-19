@@ -59,7 +59,7 @@ inline double squared(const double x) {
 
 double t_tt_calc(std::vector<double> yt, const int wash_out, const int step) {
 	double t_ave0 = 0.0, tt_ave0 = 0.0;
-	for (int t = wash_out + 1; t <= step; t++) {
+	for (int t = wash_out + 1; t < step; t++) {
 		t_ave0 += yt[t];
 		tt_ave0 += yt[t] * yt[t];
 	}
@@ -72,7 +72,7 @@ double calc_mean_squared_average(const std::vector<double>& teacher_signal, cons
 	const std::vector<std::vector<double>>& output_node, const int unit_size, const int wash_out, const int step, bool show = false) {
 	double sum_squared_average = 0.0;
 	
-	for (int t = wash_out + 1; t <= step; t++) {
+	for (int t = wash_out + 1; t < step; t++) {
 		//const double reservoir_predict_signal = cblas_ddot(unit_size + 1, weight.data(), 1, output_node[t + 1].data(), 1);
 		double reservoir_predict_signal = 0.0;
 		for (int n = 0; n <= unit_size; n++) {
