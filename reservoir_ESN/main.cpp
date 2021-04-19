@@ -17,7 +17,7 @@ double sinc(const double x) {
 }
 int main(void) {
 
-	const int unit_size = 300;
+	const int unit_size = 500;
 	const int step = 5000;
 	const int wash_out = 500;
 	std::vector<std::vector<double>> input_signal(PHASE_NUM), teacher_signal(PHASE_NUM);
@@ -54,9 +54,10 @@ int main(void) {
 				reservoir_layer_v[k] = reservoir_layer1;
 			}
 			int lm;
-			std::vector<std::vector<double>> w(11 * 11);
-			std::vector<double> nmse(11 * 11);
+			std::vector<std::vector<std::vector<double>>> w(11 * 11, std::vector<std::vector<double>>(10));
+			std::vector<std::vector<double>> nmse(11 * 11, std::vector<double>(10));
 			int opt_k = 0;
+			//#pragma omp parallel for
 			for (int k = 0; k < 11 * 11; k++) {
 				output_learning output_learning;
 				const double p = ite_p * 0.1;
@@ -64,37 +65,40 @@ int main(void) {
 				const double weight_factor = (k % 11 + 1) * 0.1;
 				output_learning.generate_simultaneous_linear_equationsA(output_node[k][TRAIN], wash_out, step, unit_size);
 				output_learning.generate_simultaneous_linear_equationsb(output_node[k][TRAIN], teacher_signal[TRAIN], wash_out, step, unit_size);
+				
 				double opt_lm = 0;
 				double opt_lm_nmse = 1e+9;
-				for (lm = 0; lm < 1; lm++) {
+				for (lm = 0; lm < 10; lm++) {
 					for (int j = 0; j <= unit_size; j++) {
 						output_learning.A[j][j] += pow(10, -16 + lm);
+						if(lm != 0) output_learning.A[j][j] -= pow(10, -16 + lm - 1);
 					}
 					output_learning.IncompleteCholeskyDecomp2(unit_size + 1);
 					double eps = 1e-12;
 					int itr = 10;
 					output_learning.ICCGSolver(unit_size + 1, itr, eps);
-					w[k] = output_learning.w;
-					nmse[k] = calc_nmse(teacher_signal[VAL], output_learning.w, output_node[k][VAL], unit_size, wash_out, step, false);
+					w[k][lm] = output_learning.w;
+					nmse[k][lm] = calc_nmse(teacher_signal[VAL], output_learning.w, output_node[k][VAL], unit_size, wash_out, step, false);
 
 				}
 			}
 			std::vector<double> opt_w;
-			for (int k = 0; k < 11 * 11; k++) {
-				if (nmse[k] < opt_nmse) {
-					opt_nmse = nmse[k];
-					opt_input_signal_factor = ((k / 11) + 1) * 0.2;
-					opt_weight_factor = (k % 11 + 1) * 0.1;
-					opt_lm2 = 0;
-					opt_k = k;
-					opt_w = w[k];
 
+			for (int k = 0; k < 11 * 11; k++) {
+				for (int lm = 0; lm < 10; lm++) {
+					if (nmse[k][lm] < opt_nmse) {
+						opt_nmse = nmse[k][lm];
+						opt_input_signal_factor = ((k / 11) + 1) * 0.2;
+						opt_weight_factor = (k % 11 + 1) * 0.1;
+						opt_lm2 = lm;
+						opt_k = k;
+						opt_w = w[k][lm];
+					}
 				}
 
 			}
 			reservoir_layer_v[opt_k].reservoir_update(input_signal[TEST], output_node[opt_k][TEST], step);
 			test_nmse = calc_nmse(teacher_signal[TEST], opt_w, output_node[opt_k][TEST], unit_size, wash_out, step, false);
-			std::cout << ite_p * 0.1 << "," << opt_input_signal_factor << "," << opt_weight_factor << "," << opt_lm2 << "," << opt_nmse << "," << test_nmse << std::endl;
 			end = std::chrono::system_clock::now();  // 計測終了時間
 			double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(); //処理に要した時間をミリ秒に変換
 
