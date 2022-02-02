@@ -103,16 +103,6 @@ int main(void) {
 				if(phase == TRAIN) task_name2.push_back("narma" + std::to_string(tau));
 			}
 			task_size[0] = teacher_signals[phase].size();
-			//for (int i = 0; i < approx_nu_set.size(); i++) {
-			//	for (int j = 0; j < approx_tau_set.size(); j++) {
-			//		double nu = approx_nu_set[i];
-			//		double tau = approx_tau_set[j];
-			//		std::vector<double> tmp_teacher_signal;
-			//		task_for_function_approximation(input_signal[phase], tmp_teacher_signal, pow(2, nu), (int)(pow(2, tau) + 0.5), step, phase);
-			//		teacher_signals[phase].push_back(tmp_teacher_signal);
-			//		if (phase == TRAIN) task_name2.push_back("approx0_" + std::to_string((int)(pow(2, tau) + 0.5)) + "_" + to_string_with_precision(nu, 1));
-			//	}
-			//}
 			for (int i = 0; i < approx_nu_set.size(); i++) {
 				for (int j = 0; j < approx_tau_set.size(); j++) {
 					double nu = approx_nu_set[i];
@@ -146,7 +136,8 @@ int main(void) {
 		}
 		// 設定出力
 		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,NL,NL_old,NL1_old";
-		for (int i = 2; i <= 7; i++) outputfile << ",NL" << std::to_string(i);
+		for (int i = 2; i <= 7; i++) outputfile << ",NL_old_" << std::to_string(i);
+		for (int i = 2; i <= 50; i++) outputfile << ",NL" << std::to_string(i);
 		for (int i = 1; i <= 50; i++) outputfile << ",L" << std::to_string(i);
 		for (int i = 55; i <= 100; i += 5) outputfile << ",L" << std::to_string(i);
 		for (int i = 0; i < task_name2.size(); i++) {
@@ -342,6 +333,9 @@ int main(void) {
 							outputfile << "," << L[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k];
 							for (int i = 2; i <= 7; i++) {
 								outputfile << "," << sub_NL_old[k][i];
+							}
+							for (int i = 2; i <= 50; i++) {
+								outputfile << "," << sub_NL[k][i];
 							}
 							for (int i = 1; i <= 50; i++) {
 								outputfile << "," << sub_L[k][i];
