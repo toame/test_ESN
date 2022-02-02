@@ -11,6 +11,7 @@
 #include <execution>
 #include <memory>
 #include <numeric>
+#include <map>
 #include "reservoir_layer.h"
 #include "output_learning.h"
 #include "task.h"
@@ -41,13 +42,12 @@ std::string to_string_with_precision(const T a_value, const int n = 6)
 	return out.str();
 }
 typedef void (*FUNC)();
-
 int main(void) {
 
 	const int TRIAL_NUM = 2;	// ループ回数
 	const int step = 4000;
 	const int wash_out = 400;
-	std::vector<int> unit_sizes = {100, 100, 200, 200 };
+	std::vector<int> unit_sizes = {50, 50, 100, 100 };
 	std::vector<std::string> toporogy = {"random", "ring","random", "ring" };
 	std::vector<std::string> task_names = { "NL", "NL" , "NL", "NL" };
 	if (unit_sizes.size() != task_names.size()) return 0;
@@ -57,17 +57,10 @@ int main(void) {
 	
 	
 	std::vector<double> p_set{ 0.0, 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 0.95, 1.0 };
-	//std::vector<double> bias_set{ 0, 0.5, 1, 2, 3, 5, 7, 10, 20, 40, 80 };
-	//std::vector<double> alpha_set{ 0.005, 0.01, 0.02, 0.03, 0.05, 0.07, 0.1, 0.2, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 5.0, 7.0, 10.0, 15.0, 20.0, 30.0, 50.0, 70.0, 100.0, 150.0, 200.0, 300.0 };
-	//std::vector<double> sigma_set{ 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2 };
 	std::vector<double> bias_set{ 0, 1, 2, 3, 5, 8};
 	std::vector<double> alpha_set{ 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0};
 	std::vector<double> sigma_set{ 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2 };
-	//std::vector<double> p_set{ 0.1, 0.5, 1.0 };
-	//std::vector<double> alpha_set{ 0.01, 0.1, 1.0, 10.0, 100.0 };
-	//std::vector<double> sigma_set{ 0.1, 0.4, 0.7, 1.0 }
-	//std::vector<double> bias_set{ -1 };
-	//*/
+
 	const int alpha_step = alpha_set.size();
 	const int sigma_step = sigma_set.size();
 	const int lambda_step = 4;
@@ -152,33 +145,10 @@ int main(void) {
 			task_size[4] = teacher_signals[phase].size();
 		}
 		// 設定出力
-		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,train_L,L,L_log";
-		for (int i = 1; i <= 6; i++) {
-			outputfile << ",Lx_" << std::to_string(i);
-		}
-		outputfile << ",train_NL,NL,NL_log";
-		for (int i = 1; i <= 6; i++) {
-			outputfile << ",NLx_" << std::to_string(i);
-		}
-		outputfile << ",train_NL_old,NL_old,NL1_old";
-		for (int i = 1; i <= 6; i++) {
-			outputfile << ",NLx_old_" << std::to_string(i);
-		}
-		for (int i = 1; i <= 20; i++) {
-			outputfile << ",L" << std::to_string(i);
-		}
-		for (int i = 30; i <= 100; i += 10) {
-			outputfile << ",L" << std::to_string(i);
-		}
-		for (int i = 2; i <= 20; i++) {
-			outputfile << ",NL" << std::to_string(i);
-		}
-		for (int i = 30; i <= 200; i += 10) {
-			outputfile << ",NL" << std::to_string(i);
-		}
-		for (int i = 2; i < 30; i++) {
-			outputfile << ",NL_old" << std::to_string(i);
-		}
+		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,NL,NL_old,NL1_old";
+		for (int i = 2; i <= 7; i++) outputfile << ",NL" << std::to_string(i);
+		for (int i = 1; i <= 50; i++) outputfile << ",L" << std::to_string(i);
+		for (int i = 55; i <= 100; i += 5) outputfile << ",L" << std::to_string(i);
 		for (int i = 0; i < task_name2.size(); i++) {
 			outputfile << "," << task_name2[i];
 		}
@@ -369,32 +339,15 @@ int main(void) {
 							double bias_factor1 = bias_factor;
 							if (bias_factor1 < 0) bias_factor1 = input_signal_factor * weight_factor;
 							outputfile << toporogy_type << "," << function_name << "," << loop << "," << unit_size << "," << p << "," << input_signal_factor << "," << bias_factor1 << "," << weight_factor;
-							outputfile << "," << train_L[k] << "," << L[k] << "," << L_log[k];
-							for (int i = 0; i < 6; i++) {
-								outputfile << "," << Lx[k][i];
-							}
-							outputfile << "," << train_NL[k] << "," << NL[k] << "," << NL_log[k];
-							for (int i = 0; i < 6; i++) {
-								outputfile << "," << NLx[k][i];
-							}
-							outputfile << "," << train_NL_old[k] << "," << NL_old[k] << "," << NL1_old[k];
-							for (int i = 0; i < 6; i++) {
-								outputfile << "," << NLx_old[k][i];
-							}
-							for (int i = 1; i <= 20; i++) {
-								outputfile << "," << sub_L[k][i];
-							}
-							for (int i = 30; i <= 100; i += 10) {
-								outputfile << "," << sub_L[k][i];
-							}
-							for (int i = 2; i <= 20; i++) {
-								outputfile << "," << sub_NL[k][i];
-							}
-							for (int i = 30; i <= 200; i += 10) {
-								outputfile << "," << sub_NL[k][i];
-							}
-							for (int i = 2; i < 30; i++) {
+							outputfile << "," << L[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k];
+							for (int i = 2; i <= 7; i++) {
 								outputfile << "," << sub_NL_old[k][i];
+							}
+							for (int i = 1; i <= 50; i++) {
+								outputfile << "," << sub_L[k][i];
+							}
+							for (int i = 55; i <= 100; i += 5) {
+								outputfile << "," << sub_L[k][i];
 							}
 							for (int i = 0; i < narma_task[k].size(); i++) {
 								outputfile << "," << narma_task[k][i];
