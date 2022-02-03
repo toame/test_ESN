@@ -252,19 +252,12 @@ int main(void) {
 						}
 						std::vector<double> L(alpha_step * sigma_step);
 						std::vector<double> L_log(alpha_step * sigma_step);
-						std::vector<double> train_L(alpha_step * sigma_step);
 						std::vector<double> NL(alpha_step * sigma_step);
-						std::vector<double> NL_log(alpha_step * sigma_step);
-						std::vector<std::vector<double>> NLx(alpha_step * sigma_step, std::vector<double>(6));
 						std::vector<double> NL_old(alpha_step * sigma_step);
 						std::vector<double> NL1_old(alpha_step * sigma_step);
 						std::vector<std::vector<double>> sub_NL_old(alpha_step * sigma_step, std::vector<double>(32));
-						std::vector<std::vector<double>> NLx_old(alpha_step * sigma_step, std::vector<double>(6));
-						std::vector<std::vector<double>> Lx(alpha_step * sigma_step, std::vector<double>(6));
 						std::vector<std::vector<double>> sub_L(alpha_step * sigma_step, std::vector<double>(unit_size * 6 + 3));
 						std::vector<std::vector<double>> sub_NL(alpha_step * sigma_step, std::vector<double>(unit_size * 6 + 3));
-						std::vector<double> train_NL(alpha_step * sigma_step);
-						std::vector<double> train_NL_old(alpha_step * sigma_step);
 						std::vector<std::vector<double>> narma_task(alpha_step * sigma_step);
 						std::vector<std::vector<double>> approx_task(alpha_step * sigma_step);
 						int c;
@@ -280,44 +273,27 @@ int main(void) {
 									const double tmp_L = 1.0 - test_nmse;
 									if (tmp_L >= TRUNC_EPSILON) {
 										L[k] += tmp_L;
-										for (c = 0; c < 6; c++) {
-											Lx[k][c] += -log10(std::max<double>(pow(10, -c - 1), test_nmse)) / (c + 1);
-										}
 										L_log[k] += tmp_L/(i - task_size[1] + 1.0);
 										sub_L[k][i - task_size[1]] += tmp_L;
 									}
-									const double tmp_train_L = 1.0 - train_nmse;
-									if (tmp_train_L >= TRUNC_EPSILON) train_L[k] += tmp_train_L;
 								}
 								else if(i < task_size[3]){
 									const double tmp_NL = (1.0 - test_nmse);
 									if (tmp_NL >= TRUNC_EPSILON) {
 										NL[k] += tmp_NL;
-										for (c = 0; c < 6; c++) {
-											NLx[k][c] += -log10(std::max<double>(pow(10, -c - 1), test_nmse)) / (c + 1);
-										}
-										NL_log[k] += (1.0 - test_nmse) / (i - task_size[2] + 1.0);
-
 										sub_NL[k][i - task_size[2] + 2] += tmp_NL;
 									}
-									const double tmp_train_NL = (1.0 - train_nmse);
-									if (tmp_train_NL >= TRUNC_EPSILON) train_NL[k] += tmp_train_NL;
 								}
 								else {
 									int d_sum = 0;
 									for (auto& e : d_vec[TEST][i - task_size[3]]) d_sum += e;
 									const double tmp_NL = d_sum * (1.0 - test_nmse);
-									
 									if (tmp_NL >= TRUNC_EPSILON) {
 										NL1_old[k] += 1.0 - test_nmse;
 										NL_old[k] += tmp_NL;
-										for (c = 0; c < 6; c++) {
-											NLx_old[k][c] += -log10(std::max<double>(pow(10, -c - 1), test_nmse)) / (c + 1);
-										}
 										sub_NL_old[k][d_sum] += tmp_NL;
 									}
 									const double tmp_train_NL = 1.0 - train_nmse;
-									if (tmp_train_NL >= TRUNC_EPSILON) train_NL_old[k] += d_sum * tmp_train_NL;
 								}
 							}
 
