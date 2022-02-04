@@ -51,8 +51,8 @@ int main(void) {
 	std::vector<std::string> toporogy = {"random", "ring"};
 	std::vector<std::string> task_names = { "NL", "NL" };
 	if (unit_sizes.size() != task_names.size()) return 0;
-	std::vector<int> param1 = { 0, 0, 0, 0};
-	std::vector<double> param2 = { 0, 0, 0, 0 };
+	std::vector<int> param1 = { 0, 0};
+	std::vector<double> param2 = { 0, 0 };
 	if (param1.size() != param2.size()) return 0;
 	
 	
@@ -166,7 +166,7 @@ int main(void) {
 						std::vector<std::vector<double>> opt_nmse(alpha_step * sigma_step, std::vector<double>(teacher_signals[TRAIN].size(), 1e+10));
 						std::vector < std::vector<double>> opt_lm2(alpha_step * sigma_step, std::vector<double>(teacher_signals[TRAIN].size()));
 						std::vector < std::vector <std::vector<double>>> opt_w(alpha_step * sigma_step, std::vector <std::vector<double>>(teacher_signals[TRAIN].size()));
-#pragma omp parallel for num_threads(32)
+#pragma omp parallel for num_threads(16)
 						// 複数のリザーバーの時間発展をまとめて処理
 						for (int k = 0; k < alpha_step * sigma_step; k++) {
 							const double input_signal_factor = alpha_set[(k / sigma_step)];
@@ -187,9 +187,9 @@ int main(void) {
 
 						int opt_k = 0;
 						int i, t, j;
-						output_learning output_learning[1000];
-						std::vector<double> A[1000];
-						#pragma omp parallel for num_threads(32)
+						std::vector<output_learning> output_learning(1000);
+						std::vector<std::vector<double>> A(1000);
+						#pragma omp parallel for num_threads(16)
 						// 重みの学習を行う
 						for (int k = 0; k < alpha_step * sigma_step; k++) {
 							if (!is_echo_state_property[k]) continue;
@@ -204,7 +204,7 @@ int main(void) {
 							}
 						}
 						
-#pragma omp parallel for  private(lm, i, t, j) num_threads(32)
+#pragma omp parallel for  private(lm, i, t, j) num_threads(16)
 						for (int k = 0; k < alpha_step * sigma_step; k++) {
 							if (!is_echo_state_property[k]) continue;
 							std::cerr << k << std::endl;
@@ -250,15 +250,15 @@ int main(void) {
 								}
 							}
 						}
-						std::vector<double> L(alpha_step * sigma_step);
-						std::vector<double> NL(alpha_step * sigma_step);
-						std::vector<double> NL_old(alpha_step * sigma_step);
-						std::vector<double> NL1_old(alpha_step * sigma_step);
-						std::vector<std::vector<double>> sub_NL_old(alpha_step * sigma_step, std::vector<double>(32));
-						std::vector<std::vector<double>> sub_L(alpha_step * sigma_step, std::vector<double>(unit_size * 6 + 3));
-						std::vector<std::vector<double>> sub_NL(alpha_step * sigma_step, std::vector<double>(unit_size * 6 + 3));
-						std::vector<std::vector<double>> narma_task(alpha_step * sigma_step);
-						std::vector<std::vector<double>> approx_task(alpha_step * sigma_step);
+						std::vector<double> L(alpha_step * sigma_step * 2);
+						std::vector<double> NL(alpha_step * sigma_step * 2);
+						std::vector<double> NL_old(alpha_step * sigma_step * 2);
+						std::vector<double> NL1_old(alpha_step * sigma_step * 2);
+						std::vector<std::vector<double>> sub_NL_old(alpha_step * sigma_step * 2, std::vector<double>(32));
+						std::vector<std::vector<double>> sub_L(alpha_step * sigma_step * 2, std::vector<double>(unit_size * 6 + 3));
+						std::vector<std::vector<double>> sub_NL(alpha_step * sigma_step * 2, std::vector<double>(unit_size * 6 + 3));
+						std::vector<std::vector<double>> narma_task(alpha_step * sigma_step * 2);
+						std::vector<std::vector<double>> approx_task(alpha_step * sigma_step * 2);
 						int c;
 						#pragma omp parallel for  private(i, c) num_threads(48)
 						for (int k = 0; k < alpha_step * sigma_step; k++) {
@@ -291,7 +291,6 @@ int main(void) {
 										NL_old[k] += tmp_NL;
 										sub_NL_old[k][d_sum] += tmp_NL;
 									}
-									const double tmp_train_NL = 1.0 - train_nmse;
 								}
 							}
 
@@ -306,10 +305,10 @@ int main(void) {
 							if (bias_factor1 < 0) bias_factor1 = input_signal_factor * weight_factor;
 							outputfile << toporogy_type << "," << function_name << "," << loop << "," << unit_size << "," << p << "," << input_signal_factor << "," << bias_factor1 << "," << weight_factor;
 							outputfile << "," << L[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k];
-							for (int i = 2; i <= 7; i++) outputfile << "," << sub_NL_old[k][i];
-							for (int i = 2; i <= 50; i++) outputfile << "," << sub_NL[k][i];
-							for (int i = 1; i <= 50; i++) outputfile << "," << sub_L[k][i];
-							for (int i = 55; i <= 100; i += 5) outputfile << "," << sub_L[k][i];
+							for (int i = 2; i < std::min<int>(8, sub_NL_old[k].size()); i++) outputfile << "," << sub_NL_old[k][i];
+							for (int i = 2; i < std::min<int>(51, sub_NL[k].size()); i++) outputfile << "," << sub_NL[k][i];
+							for (int i = 1; i < std::min<int>(51, sub_L[k].size()); i++) outputfile << "," << sub_L[k][i];
+							for (int i = 55; i < std::min<int>(101, sub_L[k].size());  i += 5) outputfile << "," << sub_L[k][i];
 							for (int i = 0; i < narma_task[k].size(); i++) outputfile << "," << narma_task[k][i];
 							for (int i = 0; i < approx_task[k].size(); i++)	outputfile << "," << approx_task[k][i];
 							outputfile << std::endl;

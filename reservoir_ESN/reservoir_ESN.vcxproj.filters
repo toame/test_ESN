@@ -41,9 +41,6 @@
     <ClCompile Include="task.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="script\average.cpp">
-      <Filter>script</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

@@ -151,7 +151,6 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="output_learning.cpp" />
     <ClCompile Include="reservoir_layer.cpp" />
-    <ClCompile Include="script\average.cpp" />
     <ClCompile Include="task.cpp" />
   </ItemGroup>
   <ItemGroup>
