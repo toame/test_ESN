@@ -22,7 +22,7 @@
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (3000)
 #define TRUNC_EPSILON (1.7e-4)
-#define THREAD_NUM (20)
+#define THREAD_NUM (50)
 #define SUBSET_SIZE (THREAD_NUM * 4)
 double sinc(const double x) {
 	if (x == 0) return 1.0;
@@ -177,7 +177,7 @@ int main(void) {
 					if (reservoir_subset.size() < SUBSET_SIZE && re + 1 < reservoir_set.size()) {
 						continue;
 					}
-					std::cerr << double(re * 100)/reservoir_set.size() << "[%]," <<  re << "," << reservoir_subset.size() << std::endl;
+					std::cerr << double((re + 1) * 100)/reservoir_set.size() << "[%]," <<  re << "," << reservoir_subset.size() << std::endl;
 
 					std::vector<std::vector<double>> opt_nmse(SUBSET_SIZE, std::vector<double>(teacher_signals[TRAIN].size(), 1e+10));
 					std::vector < std::vector<double>> opt_lm2(SUBSET_SIZE, std::vector<double>(teacher_signals[TRAIN].size()));
@@ -216,7 +216,7 @@ int main(void) {
 							A[k][i] = output_learning[k].A[i][i];
 						}
 					}
-#pragma omp parallel for  private(lm, i, t, j) num_threads(14)
+#pragma omp parallel for  private(lm, i, t, j) num_threads(THREAD_NUM)
 					for (int k = 0; k < reservoir_subset.size(); k++) {
 						if (!is_echo_state_property[k]) continue;
 						std::vector<double> output_node_T, output_node_N;
