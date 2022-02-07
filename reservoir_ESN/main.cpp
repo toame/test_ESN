@@ -22,8 +22,8 @@
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (3000)
 #define TRUNC_EPSILON (1.7e-4)
-#define THREAD_NUM (16)
-#define SUBSET_SIZE (THREAD_NUM * 4)
+#define THREAD_NUM (50)
+#define SUBSET_SIZE (THREAD_NUM * 10)
 double sinc(const double x) {
 	if (x == 0) return 1.0;
 	return sin(PI * x) / (PI * x);
@@ -71,7 +71,7 @@ int main(void) {
 
 	const int alpha_step = alpha_set.size();
 	const int sigma_step = sigma_set.size();
-	const int lambda_step = 1;
+	const int lambda_step = 4;
 	std::string task_name;
 	std::string function_name;
 
@@ -232,7 +232,7 @@ int main(void) {
 								}
 								output_learning[k].IncompleteCholeskyDecomp2(unit_size + 1);
 								double eps = 1e-12;
-								int itr = 1;
+								int itr = 10;
 								output_learning[k].ICCGSolver(unit_size + 1, itr, eps);
 								w[k][i][lm] = output_learning[k].w;
 								nmse[k][i][lm] = calc_nmse(teacher_signals[VAL][i], output_learning[k].w, output_node[k][VAL], unit_size, wash_out, step, false);
