@@ -27,6 +27,7 @@ public:
 	std::string toporogy_type;
 	std::mt19937 mt;
 	int wash_out;
+	bool is_echo_state_property;
 
 	reservoir_layer();
 	reservoir_layer(const int unit_size, const int connection_degree, const double iss_factor, const double weight_factor, const double bias_factor, const double p,
@@ -35,7 +36,7 @@ public:
 	void generate_reservoir();
 	void reservoir_update(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node, const int t_size, int seed = 0);
 	void reservoir_update_show(const std::vector<double> input_signal, std::vector<std::vector<double>> output_node, const int t_size, const int wash_out, const std::string name);
-	bool is_echo_state_property(const std::vector<double>& input_signal);
+	bool judge_echo_state_property(const std::vector<double>& input_signal);
 	double activation_function(const double x, const int type);
 	
 	static std::vector<reservoir_layer> generate_reservoir(const std::vector<double> p_set, const std::vector<double> bias_set, const std::vector<double> alpha_set,

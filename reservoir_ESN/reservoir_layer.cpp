@@ -139,7 +139,7 @@ void reservoir_layer::reservoir_update_show(const std::vector<double> input_sign
 // Echo State Property(ESP)の有無をチェックする
 // Echo State Propertyを持つリザーバーであるとは、リザーバーの持つノードの初期値に依存しない状態を言う。
 //
-bool reservoir_layer::is_echo_state_property(const std::vector<double>& input_signal) {
+bool reservoir_layer::judge_echo_state_property(const std::vector<double>& input_signal) {
 	auto output_node1 = std::vector<std::vector<double>>(wash_out + 2, std::vector<double>(unit_size + 1, 0));
 	auto output_node2 = std::vector<std::vector<double>>(wash_out + 2, std::vector<double>(unit_size + 1, 0));
 
@@ -162,7 +162,7 @@ bool reservoir_layer::is_echo_state_property(const std::vector<double>& input_si
 	// ノード初期値によって状態が等しくなるならば、EchoStatePropertyを持つ
 	double err_ave = err_sum / (unit_size);
 	//std::cerr << err_sum << std::endl;
-	return err_ave <= 10.0;
+	return is_echo_state_property = (err_ave <= 10.0);
 }
 
 double reservoir_layer::activation_function(const double x, const int type) {

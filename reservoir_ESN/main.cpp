@@ -22,8 +22,8 @@
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (3000)
 #define TRUNC_EPSILON (1.7e-4)
-#define THREAD_NUM (50)
-#define SUBSET_SIZE (THREAD_NUM * 10)
+#define THREAD_NUM (20)
+#define SUBSET_SIZE (THREAD_NUM * 4)
 double sinc(const double x) {
 	if (x == 0) return 1.0;
 	return sin(PI * x) / (PI * x);
@@ -76,7 +76,6 @@ int main(void) {
 	std::string function_name;
 
 	std::vector<std::vector<std::vector<std::vector<double>>>> output_node(SUBSET_SIZE, std::vector<std::vector<std::vector<double>>>(PHASE_NUM, std::vector<std::vector<double>>(step + 2, std::vector<double>(MAX_UNIT_SIZE + 1, 0))));
-	std::vector<bool> is_echo_state_property(SUBSET_SIZE);
 	std::vector < std::vector<std::vector<std::vector<double>>>> w(SUBSET_SIZE, std::vector<std::vector<std::vector<double>>>(MAX_TASK_SIZE, std::vector<std::vector<double>>(lambda_step))); // 各リザーバーの出力重み
 	std::vector<std::vector<std::vector<double>>> nmse(SUBSET_SIZE, std::vector<std::vector<double>>(MAX_TASK_SIZE, std::vector<double>(lambda_step)));						// 各リザーバーのnmseを格納
 	std::vector<double> approx_nu_set({ -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0 });
@@ -190,7 +189,7 @@ int main(void) {
 						reservoir_subset[k].reservoir_update(input_signal[TRAIN], output_node[k][TRAIN], step);
 						reservoir_subset[k].reservoir_update(input_signal[VAL], output_node[k][VAL], step);
 						reservoir_subset[k].reservoir_update(input_signal[TEST], output_node[k][TEST], step);
-						is_echo_state_property[k] = reservoir_subset[k].is_echo_state_property(input_signal[VAL]);
+						reservoir_subset[k].judge_echo_state_property(input_signal[VAL]);
 					}
 					int lm;
 
@@ -202,12 +201,12 @@ int main(void) {
 #pragma omp parallel for num_threads(THREAD_NUM)
 					// 重みの学習を行う
 					for (int k = 0; k < reservoir_subset.size(); k++) {
-						if (!is_echo_state_property[k]) continue;
+						if (!reservoir_subset[k].is_echo_state_property) continue;
 						output_learning[k].generate_simultaneous_linear_equationsA(output_node[k][TRAIN], wash_out, step, unit_size);
 					}
 #pragma omp parallel for private(i) num_threads(THREAD_NUM)
 					for (int k = 0; k < reservoir_subset.size(); k++) {
-						if (!is_echo_state_property[k]) continue;
+						if (!reservoir_subset[k].is_echo_state_property) continue;
 						A[k].resize(unit_size + 1);
 						for (i = 0; i <= unit_size; i++) {
 							A[k][i] = output_learning[k].A[i][i];
@@ -215,7 +214,7 @@ int main(void) {
 					}
 #pragma omp parallel for  private(lm, i, t, j) num_threads(THREAD_NUM)
 					for (int k = 0; k < reservoir_subset.size(); k++) {
-						if (!is_echo_state_property[k]) continue;
+						if (!reservoir_subset[k].is_echo_state_property) continue;
 						std::vector<double> output_node_T;
 						for (i = 0; i <= unit_size; i++) {
 							for (t = wash_out + 1; t < step; t++) {
@@ -243,7 +242,7 @@ int main(void) {
 
 					// 検証データでもっとも性能の良いリザーバーを選択
 					for (int k = 0; k < reservoir_subset.size(); k++) {
-						if (!is_echo_state_property[k]) continue;
+						if (!reservoir_subset[k].is_echo_state_property) continue;
 						for (int i = 0; i < teacher_signals[TRAIN].size(); i++) {
 							for (int lm = 0; lm < lambda_step; lm++) {
 								if (nmse[k][i][lm] < opt_nmse[k][i]) {
@@ -266,7 +265,7 @@ int main(void) {
 					std::cerr << "calc_L, calc_NL..." << std::endl;
 #pragma omp parallel for  private(i) num_threads(THREAD_NUM)
 					for (int k = 0; k < reservoir_subset.size(); k++) {
-						if (!is_echo_state_property[k]) continue;
+						if (!reservoir_subset[k].is_echo_state_property) continue;
 						std::cerr << k << ",";
 						for (i = 0; i < teacher_signals[TEST].size(); i++) {
 							const double test_nmse = calc_nmse(teacher_signals[TEST][i], opt_w[k][i], output_node[k][TEST], unit_size, wash_out, step, false);
@@ -305,7 +304,7 @@ int main(void) {
 					std::cerr << "output..." << std::endl;
 					// ファイル出力
 					for (int k = 0; k < reservoir_subset.size(); k++) {
-						if (!is_echo_state_property[k]) continue;
+						if (!reservoir_subset[k].is_echo_state_property) continue;
 						const double input_signal_factor = reservoir_subset[k].input_signal_factor;
 						const double weight_factor = reservoir_subset[k].weight_factor;
 						double bias_factor1 = reservoir_subset[k].bias_factor;
