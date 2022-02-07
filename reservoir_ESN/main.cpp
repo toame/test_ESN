@@ -23,7 +23,7 @@
 #define MAX_TASK_SIZE (3000)
 #define TRUNC_EPSILON (1.7e-4)
 #define THREAD_NUM (50)
-#define SUBSET_SIZE (THREAD_NUM * 4)
+#define SUBSET_SIZE (THREAD_NUM * 10)
 double sinc(const double x) {
 	if (x == 0) return 1.0;
 	return sin(PI * x) / (PI * x);
