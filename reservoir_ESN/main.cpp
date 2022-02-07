@@ -217,15 +217,10 @@ int main(void) {
 #pragma omp parallel for  private(lm, i, t, j) num_threads(THREAD_NUM)
 					for (int k = 0; k < reservoir_subset.size(); k++) {
 						if (!is_echo_state_property[k]) continue;
-						std::vector<double> output_node_T, output_node_N;
+						std::vector<double> output_node_T;
 						for (i = 0; i <= unit_size; i++) {
 							for (t = wash_out + 1; t < step; t++) {
 								output_node_T.push_back(output_node[k][TRAIN][t + 1][i]);
-							}
-						}
-						for (t = 0; t < step; t++) {
-							for (i = 0; i <= unit_size; i++) {
-								output_node_N.push_back(output_node[k][VAL][t + 1][i]);
 							}
 						}
 						for (i = 0; i < teacher_signals[TRAIN].size(); i++) {
