@@ -44,7 +44,6 @@ std::string to_string_with_precision(const T a_value, const int n = 6)
 	return out.str();
 }
 
-
 typedef void (*FUNC)();
 int main(void) {
 
@@ -148,7 +147,7 @@ int main(void) {
 		for (int i = 2; i <= 7; i++) outputfile << ",NL_old_" << std::to_string(i);
 		for (int i = 2; i <= 50; i++) outputfile << ",NL" << std::to_string(i);
 		for (int i = 1; i <= 50; i++) outputfile << ",L" << std::to_string(i);
-		for (int i = 55; i <= 100; i += 5) outputfile << ",L" << std::to_string(i);
+		for (int i = 55; i <= std::min(unit_size, 100); i += 5) outputfile << ",L" << std::to_string(i);
 		for (int i = 0; i < task_name2.size(); i++) {
 			outputfile << "," << task_name2[i];
 		}
@@ -259,9 +258,9 @@ int main(void) {
 					std::vector<double> NL(reservoir_subset.size());
 					std::vector<double> NL_old(reservoir_subset.size());
 					std::vector<double> NL1_old(reservoir_subset.size());
-					std::vector<std::vector<double>> sub_NL_old(reservoir_subset.size(), std::vector<double>(32));
-					std::vector<std::vector<double>> sub_L(reservoir_subset.size(), std::vector<double>(unit_size * 6 + 3));
-					std::vector<std::vector<double>> sub_NL(reservoir_subset.size(), std::vector<double>(unit_size * 6 + 3));
+					std::vector<std::vector<double>> sub_NL_old(reservoir_subset.size());
+					std::vector<std::vector<double>> sub_L(reservoir_subset.size());
+					std::vector<std::vector<double>> sub_NL(reservoir_subset.size());
 					std::vector<std::vector<double>> narma_task(reservoir_subset.size());
 					std::vector<std::vector<double>> approx_task(reservoir_subset.size());
 					std::cerr << "calc_L, calc_NL..." << std::endl;
@@ -275,31 +274,27 @@ int main(void) {
 							else if (i < task_size[1]) approx_task[k].push_back(test_nmse);
 							else if (i < task_size[2]) {
 								const double tmp_L = 1.0 - test_nmse;
-								if (tmp_L >= TRUNC_EPSILON) {
-									L[k] += tmp_L;
-									sub_L[k][i - task_size[1] + 1] += tmp_L;
-								}
+								if (tmp_L >= TRUNC_EPSILON) L[k] += tmp_L;
+								sub_L[k].push_back(tmp_L);
 							}
 							else if (i < task_size[3]) {
 								const double tmp_NL = (1.0 - test_nmse);
-								if (tmp_NL >= TRUNC_EPSILON) {
-									NL[k] += tmp_NL;
-									sub_NL[k][i - task_size[2] + 2] += tmp_NL;
-								}
+								if (tmp_NL >= TRUNC_EPSILON) NL[k] += tmp_NL;
+								sub_NL[k].push_back(tmp_NL);
 							}
 							else if (i < task_size[4]) {
-								int d_sum = 0;
 								if (d_vec[TEST].size() <= i - task_size[3]) {
 									std::cerr << "error: " << d_vec[TEST].size() << "," << i - task_size[3] << std::endl;
 									break;
 								}
+								int d_sum = 0;
 								for (auto& e : d_vec[TEST][i - task_size[3]]) d_sum += e;
 								const double tmp_NL = d_sum * (1.0 - test_nmse);
 								if (tmp_NL >= TRUNC_EPSILON) {
 									NL1_old[k] += 1.0 - test_nmse;
 									NL_old[k] += tmp_NL;
-									sub_NL_old[k][d_sum] += tmp_NL;
 								}
+								sub_NL_old[k].push_back(tmp_NL);
 							}
 							else {
 								std::cerr << "error" << std::endl;
@@ -318,10 +313,11 @@ int main(void) {
 						const double p = reservoir_subset[k].p;
 						outputfile << toporogy_type << "," << function_name << "," << loop << "," << unit_size << "," << p << "," << input_signal_factor << "," << bias_factor1 << "," << weight_factor;
 						outputfile << "," << L[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k];
-						for (int i = 2; i < std::min<int>(8, sub_NL_old[k].size()); i++) outputfile << "," << sub_NL_old[k][i];
-						for (int i = 2; i < std::min<int>(51, sub_NL[k].size()); i++) outputfile << "," << sub_NL[k][i];
-						for (int i = 1; i < std::min<int>(51, sub_L[k].size()); i++) outputfile << "," << sub_L[k][i];
-						for (int i = 55; i < std::min<int>(101, sub_L[k].size()); i += 5) outputfile << "," << sub_L[k][i];
+
+						for (int i = 0; i < std::min<int>(6, sub_NL_old[k].size()); i++) outputfile << "," << sub_NL_old[k][i];
+						for (int i = 0; i < std::min<int>(51 - 2, sub_NL[k].size()); i++) outputfile << "," << sub_NL[k][i];
+						for (int i = 0; i < std::min<int>(51 - 1, sub_L[k].size()); i++) outputfile << "," << sub_L[k][i];
+						for (int i = 55 - 2; i < std::min<int>(101, sub_L[k].size()); i += 5) outputfile << "," << sub_L[k][i];
 						for (int i = 0; i < narma_task[k].size(); i++) outputfile << "," << narma_task[k][i];
 						for (int i = 0; i < approx_task[k].size(); i++)	outputfile << "," << approx_task[k][i];
 						outputfile << std::endl;
