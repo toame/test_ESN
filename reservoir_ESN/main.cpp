@@ -22,7 +22,7 @@
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (3000)
 #define TRUNC_EPSILON (1.7e-4)
-#define THREAD_NUM (12)
+#define THREAD_NUM (13)
 #define SUBSET_SIZE (THREAD_NUM * 4)
 double sinc(const double x) {
 	if (x == 0) return 1.0;
@@ -272,6 +272,7 @@ int main(void) {
 					std::vector<std::vector<double>> narma_task(alpha_step * sigma_step * 2);
 					std::vector<std::vector<double>> approx_task(alpha_step * sigma_step * 2);
 					int c;
+					std::cerr << "calc_L, calc_NL..." << std::endl;
 #pragma omp parallel for  private(i, c) num_threads(THREAD_NUM)
 					for (int k = 0; k < reservoir_subset.size(); k++) {
 						if (!is_echo_state_property[k]) continue;
