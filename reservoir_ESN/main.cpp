@@ -22,8 +22,8 @@
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (3000)
 #define TRUNC_EPSILON (1.7e-4)
-#define THREAD_NUM (50)
-#define SUBSET_SIZE (THREAD_NUM * 10)
+#define THREAD_NUM (16)
+#define SUBSET_SIZE (THREAD_NUM * 4)
 double sinc(const double x) {
 	if (x == 0) return 1.0;
 	return sin(PI * x) / (PI * x);
@@ -72,12 +72,11 @@ int main(void) {
 
 	const int alpha_step = alpha_set.size();
 	const int sigma_step = sigma_set.size();
-	const int lambda_step = 4;
+	const int lambda_step = 1;
 	std::string task_name;
 	std::string function_name;
 
 	std::vector<std::vector<std::vector<std::vector<double>>>> output_node(SUBSET_SIZE, std::vector<std::vector<std::vector<double>>>(PHASE_NUM, std::vector<std::vector<double>>(step + 2, std::vector<double>(MAX_UNIT_SIZE + 1, 0))));
-	std::vector<reservoir_layer> reservoir_layer_v(SUBSET_SIZE);
 	std::vector<bool> is_echo_state_property(SUBSET_SIZE);
 	std::vector < std::vector<std::vector<std::vector<double>>>> w(SUBSET_SIZE, std::vector<std::vector<std::vector<double>>>(MAX_TASK_SIZE, std::vector<std::vector<double>>(lambda_step))); // 各リザーバーの出力重み
 	std::vector<std::vector<std::vector<double>>> nmse(SUBSET_SIZE, std::vector<std::vector<double>>(MAX_TASK_SIZE, std::vector<double>(lambda_step)));						// 各リザーバーのnmseを格納
@@ -193,7 +192,6 @@ int main(void) {
 						reservoir_subset[k].reservoir_update(input_signal[VAL], output_node[k][VAL], step);
 						reservoir_subset[k].reservoir_update(input_signal[TEST], output_node[k][TEST], step);
 						is_echo_state_property[k] = reservoir_subset[k].is_echo_state_property(input_signal[VAL]);
-						reservoir_layer_v[k] = reservoir_subset[k];
 					}
 					int lm;
 
@@ -240,7 +238,7 @@ int main(void) {
 								}
 								output_learning[k].IncompleteCholeskyDecomp2(unit_size + 1);
 								double eps = 1e-12;
-								int itr = 10;
+								int itr = 1;
 								output_learning[k].ICCGSolver(unit_size + 1, itr, eps);
 								w[k][i][lm] = output_learning[k].w;
 								nmse[k][i][lm] = calc_nmse(teacher_signals[VAL][i], output_learning[k].w, output_node[k][VAL], unit_size, wash_out, step, false);
@@ -318,11 +316,11 @@ int main(void) {
 					// ファイル出力
 					for (int k = 0; k < SUBSET_SIZE; k++) {
 						if (!is_echo_state_property[k]) continue;
-						const double input_signal_factor = reservoir_layer_v[k].input_signal_factor;
-						const double weight_factor = reservoir_layer_v[k].weight_factor;
-						double bias_factor1 = reservoir_layer_v[k].bias_factor;
+						const double input_signal_factor = reservoir_subset[k].input_signal_factor;
+						const double weight_factor = reservoir_subset[k].weight_factor;
+						double bias_factor1 = reservoir_subset[k].bias_factor;
 						if (bias_factor1 < 0) bias_factor1 = input_signal_factor * weight_factor;
-						const double p = reservoir_layer_v[k].p;
+						const double p = reservoir_subset[k].p;
 						outputfile << toporogy_type << "," << function_name << "," << loop << "," << unit_size << "," << p << "," << input_signal_factor << "," << bias_factor1 << "," << weight_factor;
 						outputfile << "," << L[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k];
 						for (int i = 2; i < std::min<int>(8, sub_NL_old[k].size()); i++) outputfile << "," << sub_NL_old[k][i];
