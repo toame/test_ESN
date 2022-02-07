@@ -20,6 +20,22 @@ reservoir_layer::reservoir_layer(const int unit_size, const int connection_degre
 	mt.seed(seed);
 }
 
+std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const std::vector<double> p_set, const std::vector<double> bias_set, const std::vector<double> alpha_set,
+	const std::vector<double> sigma_set, const int unit_size, const int connection_degree, double (*nonlinear)(double), const unsigned int seed, const int wash_out, const std::string toporogy_type) {
+	std::vector<reservoir_layer> ret;
+	for (auto p : p_set) {
+		for (auto bias : bias_set) {
+			for (auto alpha : alpha_set) {
+				for (auto sigma : sigma_set) {
+					ret.push_back(reservoir_layer(unit_size, connection_degree, alpha, sigma, bias, p, nonlinear, seed, wash_out, toporogy_type));
+				}
+			}
+		}
+	}
+	std::cerr << ret.size() << std::endl;
+	return ret;
+}
+
 // 結合トポロジーや結合重みなどを設定する
 void reservoir_layer::generate_reservoir() {
 
