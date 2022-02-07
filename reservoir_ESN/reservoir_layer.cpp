@@ -139,7 +139,7 @@ void reservoir_layer::reservoir_update_show(const std::vector<double> input_sign
 // Echo State Property(ESP)の有無をチェックする
 // Echo State Propertyを持つリザーバーであるとは、リザーバーの持つノードの初期値に依存しない状態を言う。
 //
-bool reservoir_layer::judge_echo_state_property(const std::vector<double>& input_signal) {
+bool reservoir_layer::calc_echo_state_property(const std::vector<double>& input_signal) {
 	auto output_node1 = std::vector<std::vector<double>>(wash_out + 2, std::vector<double>(unit_size + 1, 0));
 	auto output_node2 = std::vector<std::vector<double>>(wash_out + 2, std::vector<double>(unit_size + 1, 0));
 

@@ -88,7 +88,7 @@ int main(void) {
 		int connection_degree = unit_size / 10;
 		if (toporogy_type == "ring") connection_degree = 1;
 		std::vector<std::vector<double>> input_signal(PHASE_NUM);
-		std::vector<std::vector<std::vector<double>>> teacher_signals(PHASE_NUM);
+		std::vector<std::vector<std::pair<std::string, std::vector<double>>>> teacher_signals(PHASE_NUM);
 
 		std::vector<std::string> function_names = { "sinc", "tanh" };
 		double alpha_min, d_alpha;
@@ -98,47 +98,43 @@ int main(void) {
 		// 入力信号 教師信号の生成
 		std::vector<std::vector<std::vector<int>>> d_vec(PHASE_NUM);
 		std::vector<std::string> task_name2;
-		std::vector<int> task_size(5);
 		generate_d_sequence_set(d_vec);
 		for (int phase = 0; phase < PHASE_NUM; phase++) {
 			generate_input_signal_random(input_signal[phase], -1.0, 2.0, step, phase + 1);
 			for (auto tau : narma_tau_set) {
 				std::vector<double> tmp_teacher_signal;
 				generate_narma_task2(input_signal[phase], tmp_teacher_signal, tau, step);
-				teacher_signals[phase].push_back(tmp_teacher_signal);
+				teacher_signals[phase].push_back({ "narma", tmp_teacher_signal });
 				if (phase == TRAIN) task_name2.push_back("narma" + std::to_string(tau));
 			}
-			task_size[0] = teacher_signals[phase].size();
 			for (int i = 0; i < approx_nu_set.size(); i++) {
 				for (int j = 0; j < approx_tau_set.size(); j++) {
 					double nu = approx_nu_set[i];
 					double tau = approx_tau_set[j];
 					std::vector<double> tmp_teacher_signal;
 					task_for_function_approximation2(input_signal[phase], tmp_teacher_signal, pow(2, nu), (int)(pow(2, tau) + 0.5), step, phase);
-					teacher_signals[phase].push_back(tmp_teacher_signal);
+					teacher_signals[phase].push_back({ "approx", tmp_teacher_signal });
 					if (phase == TRAIN) task_name2.push_back("approx_" + std::to_string((int)(pow(2, tau) + 0.5)) + "_" + to_string_with_precision(nu, 1));
 				}
 			}
-			task_size[1] = teacher_signals[phase].size();
 			for (int tau = 1; tau <= unit_size; tau++) {
 				std::vector<double> tmp_teacher_signal;
 				task_for_calc_of_L(input_signal[phase], tmp_teacher_signal, tau, step);
-				teacher_signals[phase].push_back(tmp_teacher_signal);
+				teacher_signals[phase].push_back({ "L", tmp_teacher_signal });
 			}
-			task_size[2] = teacher_signals[phase].size();
 			std::cerr << "ok: " << d_vec[phase].size() << std::endl;
 			for (int nu = 2; nu <= unit_size; nu++) {
 				std::vector<double> tmp_teacher_signal;
 				task_for_calc_of_NL2(input_signal[phase], tmp_teacher_signal, nu, step);
-				teacher_signals[phase].push_back(tmp_teacher_signal);
+				teacher_signals[phase].push_back({ "NL2", tmp_teacher_signal });
 			}
-			task_size[3] = teacher_signals[phase].size();
 			for (auto& d : d_vec[phase]) {
 				std::vector<double> tmp_teacher_signal;
 				task_for_calc_of_NL(input_signal[phase], tmp_teacher_signal, d, step);
-				teacher_signals[phase].push_back(tmp_teacher_signal);
+				int num = 0;
+				for (int i = 0; i < d.size(); i++) num += d[i];
+				teacher_signals[phase].push_back({ "NL_" +std::to_string(num) , tmp_teacher_signal });
 			}
-			task_size[4] = teacher_signals[phase].size();
 		}
 
 		// 設定出力
@@ -152,8 +148,6 @@ int main(void) {
 		}
 		outputfile << std::endl;
 		std::cerr << teacher_signals[TRAIN].size() << std::endl;
-		for (int i = 0; i < 4; i++) std::cerr << task_size[i] << " ";
-		std::cerr << std::endl;
 		std::chrono::system_clock::time_point  start, end; // 型は auto で可
 		for (int loop = 0; loop < TRIAL_NUM; loop++) {
 			start = std::chrono::system_clock::now(); // 計測開始時間
@@ -189,7 +183,7 @@ int main(void) {
 						reservoir_subset[k].reservoir_update(input_signal[TRAIN], output_node[k][TRAIN], step);
 						reservoir_subset[k].reservoir_update(input_signal[VAL], output_node[k][VAL], step);
 						reservoir_subset[k].reservoir_update(input_signal[TEST], output_node[k][TEST], step);
-						reservoir_subset[k].judge_echo_state_property(input_signal[VAL]);
+						reservoir_subset[k].calc_echo_state_property(input_signal[VAL]);
 					}
 					int lm;
 
@@ -222,7 +216,7 @@ int main(void) {
 							}
 						}
 						for (i = 0; i < teacher_signals[TRAIN].size(); i++) {
-							output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T, teacher_signals[TRAIN][i], wash_out, step, unit_size);
+							output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T, teacher_signals[TRAIN][i].second, wash_out, step, unit_size);
 							double opt_lm = 0;
 							double opt_lm_nmse = 1e+9;
 							for (lm = 0; lm < lambda_step; lm++) {
@@ -234,7 +228,7 @@ int main(void) {
 								int itr = 10;
 								output_learning[k].ICCGSolver(unit_size + 1, itr, eps);
 								w[k][i][lm] = output_learning[k].w;
-								nmse[k][i][lm] = calc_nmse(teacher_signals[VAL][i], output_learning[k].w, output_node[k][VAL], unit_size, wash_out, step, false);
+								nmse[k][i][lm] = calc_nmse(teacher_signals[VAL][i].second, output_learning[k].w, output_node[k][VAL], unit_size, wash_out, step, false);
 							}
 						}
 					}
@@ -257,7 +251,7 @@ int main(void) {
 					std::vector<double> NL(reservoir_subset.size());
 					std::vector<double> NL_old(reservoir_subset.size());
 					std::vector<double> NL1_old(reservoir_subset.size());
-					std::vector<std::vector<double>> sub_NL_old(reservoir_subset.size());
+					std::vector <std::map<int, double>> sub_NL_old(reservoir_subset.size());
 					std::vector<std::vector<double>> sub_L(reservoir_subset.size());
 					std::vector<std::vector<double>> sub_NL(reservoir_subset.size());
 					std::vector<std::vector<double>> narma_task(reservoir_subset.size());
@@ -268,32 +262,27 @@ int main(void) {
 						if (!reservoir_subset[k].is_echo_state_property) continue;
 						std::cerr << k << ",";
 						for (i = 0; i < teacher_signals[TEST].size(); i++) {
-							const double test_nmse = calc_nmse(teacher_signals[TEST][i], opt_w[k][i], output_node[k][TEST], unit_size, wash_out, step, false);
-							if (i < task_size[0]) narma_task[k].push_back(test_nmse);
-							else if (i < task_size[1]) approx_task[k].push_back(test_nmse);
-							else if (i < task_size[2]) {
+							const double test_nmse = calc_nmse(teacher_signals[TEST][i].second, opt_w[k][i], output_node[k][TEST], unit_size, wash_out, step, false);
+							if (teacher_signals[TEST][i].first == "narma") narma_task[k].push_back(test_nmse);
+							else if (teacher_signals[TEST][i].first == "approx") approx_task[k].push_back(test_nmse);
+							else if (teacher_signals[TEST][i].first == "L") {
 								const double tmp_L = 1.0 - test_nmse;
 								if (tmp_L >= TRUNC_EPSILON) L[k] += tmp_L;
-								sub_L[k].push_back(tmp_L);
+								sub_L[k].push_back(std::max(0.0, tmp_L));
 							}
-							else if (i < task_size[3]) {
+							else if (teacher_signals[TEST][i].first == "NL2") {
 								const double tmp_NL = (1.0 - test_nmse);
 								if (tmp_NL >= TRUNC_EPSILON) NL[k] += tmp_NL;
-								sub_NL[k].push_back(tmp_NL);
+								sub_NL[k].push_back(std::max(0.0, tmp_NL));
 							}
-							else if (i < task_size[4]) {
-								if (d_vec[TEST].size() <= i - task_size[3]) {
-									std::cerr << "error: " << d_vec[TEST].size() << "," << i - task_size[3] << std::endl;
-									break;
-								}
-								int d_sum = 0;
-								for (auto& e : d_vec[TEST][i - task_size[3]]) d_sum += e;
+							else if (teacher_signals[TEST][i].first.substr(0, 3) == "NL_") {
+								int d_sum = std::stoi(teacher_signals[TEST][i].first.substr(3));
 								const double tmp_NL = d_sum * (1.0 - test_nmse);
 								if (tmp_NL >= TRUNC_EPSILON) {
 									NL1_old[k] += 1.0 - test_nmse;
 									NL_old[k] += tmp_NL;
+									sub_NL_old[k][d_sum] += tmp_NL;
 								}
-								sub_NL_old[k].push_back(tmp_NL);
 							}
 							else {
 								std::cerr << "error" << std::endl;
@@ -313,7 +302,7 @@ int main(void) {
 						outputfile << toporogy_type << "," << function_name << "," << loop << "," << unit_size << "," << p << "," << input_signal_factor << "," << bias_factor1 << "," << weight_factor;
 						outputfile << "," << L[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k];
 
-						for (int i = 0; i < std::min<int>(6, sub_NL_old[k].size()); i++) outputfile << "," << sub_NL_old[k][i];
+						for (int i = 2; i < 8; i++) outputfile << "," << sub_NL_old[k][i];
 						for (int i = 0; i < std::min<int>(51 - 2, sub_NL[k].size()); i++) outputfile << "," << sub_NL[k][i];
 						for (int i = 0; i < std::min<int>(51 - 1, sub_L[k].size()); i++) outputfile << "," << sub_L[k][i];
 						for (int i = 55 - 2; i < std::min<int>(101, sub_L[k].size()); i += 5) outputfile << "," << sub_L[k][i];
