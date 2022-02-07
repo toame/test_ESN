@@ -304,7 +304,7 @@ int main(void) {
 					}
 					std::cerr << "output..." << std::endl;
 					// ファイル出力
-					for (int k = 0; k < SUBSET_SIZE; k++) {
+					for (int k = 0; k < reservoir_subset.size(); k++) {
 						if (!is_echo_state_property[k]) continue;
 						const double input_signal_factor = reservoir_subset[k].input_signal_factor;
 						const double weight_factor = reservoir_subset[k].weight_factor;
