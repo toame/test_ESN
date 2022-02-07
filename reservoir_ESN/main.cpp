@@ -22,7 +22,7 @@
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (3000)
 #define TRUNC_EPSILON (1.7e-4)
-#define THREAD_NUM (13)
+#define THREAD_NUM (20)
 #define SUBSET_SIZE (THREAD_NUM * 4)
 double sinc(const double x) {
 	if (x == 0) return 1.0;
@@ -262,30 +262,29 @@ int main(void) {
 							}
 						}
 					}
-					std::vector<double> L(alpha_step * sigma_step * 2);
-					std::vector<double> NL(alpha_step * sigma_step * 2);
-					std::vector<double> NL_old(alpha_step * sigma_step * 2);
-					std::vector<double> NL1_old(alpha_step * sigma_step * 2);
-					std::vector<std::vector<double>> sub_NL_old(alpha_step * sigma_step * 2, std::vector<double>(32));
-					std::vector<std::vector<double>> sub_L(alpha_step * sigma_step * 2, std::vector<double>(unit_size * 6 + 3));
-					std::vector<std::vector<double>> sub_NL(alpha_step * sigma_step * 2, std::vector<double>(unit_size * 6 + 3));
-					std::vector<std::vector<double>> narma_task(alpha_step * sigma_step * 2);
-					std::vector<std::vector<double>> approx_task(alpha_step * sigma_step * 2);
-					int c;
+					std::vector<double> L(reservoir_subset.size());
+					std::vector<double> NL(reservoir_subset.size());
+					std::vector<double> NL_old(reservoir_subset.size());
+					std::vector<double> NL1_old(reservoir_subset.size());
+					std::vector<std::vector<double>> sub_NL_old(reservoir_subset.size(), std::vector<double>(32));
+					std::vector<std::vector<double>> sub_L(reservoir_subset.size(), std::vector<double>(unit_size * 6 + 3));
+					std::vector<std::vector<double>> sub_NL(reservoir_subset.size(), std::vector<double>(unit_size * 6 + 3));
+					std::vector<std::vector<double>> narma_task(reservoir_subset.size());
+					std::vector<std::vector<double>> approx_task(reservoir_subset.size());
 					std::cerr << "calc_L, calc_NL..." << std::endl;
-#pragma omp parallel for  private(i, c) num_threads(THREAD_NUM)
+#pragma omp parallel for  private(i) num_threads(THREAD_NUM)
 					for (int k = 0; k < reservoir_subset.size(); k++) {
 						if (!is_echo_state_property[k]) continue;
+						std::cerr << k << ",";
 						for (i = 0; i < teacher_signals[TEST].size(); i++) {
 							const double test_nmse = calc_nmse(teacher_signals[TEST][i], opt_w[k][i], output_node[k][TEST], unit_size, wash_out, step, false);
-							const double train_nmse = calc_nmse(teacher_signals[TRAIN][i], opt_w[k][i], output_node[k][TRAIN], unit_size, wash_out, step, false);
 							if (i < task_size[0]) narma_task[k].push_back(test_nmse);
 							else if (i < task_size[1]) approx_task[k].push_back(test_nmse);
 							else if (i < task_size[2]) {
 								const double tmp_L = 1.0 - test_nmse;
 								if (tmp_L >= TRUNC_EPSILON) {
 									L[k] += tmp_L;
-									sub_L[k][i - task_size[1]] += tmp_L;
+									sub_L[k][i - task_size[1] + 1] += tmp_L;
 								}
 							}
 							else if (i < task_size[3]) {
@@ -295,8 +294,12 @@ int main(void) {
 									sub_NL[k][i - task_size[2] + 2] += tmp_NL;
 								}
 							}
-							else {
+							else if (i < task_size[4]) {
 								int d_sum = 0;
+								if (d_vec[TEST].size() <= i - task_size[3]) {
+									std::cerr << "error: " << d_vec[TEST].size() << "," << i - task_size[3] << std::endl;
+									break;
+								}
 								for (auto& e : d_vec[TEST][i - task_size[3]]) d_sum += e;
 								const double tmp_NL = d_sum * (1.0 - test_nmse);
 								if (tmp_NL >= TRUNC_EPSILON) {
@@ -305,10 +308,13 @@ int main(void) {
 									sub_NL_old[k][d_sum] += tmp_NL;
 								}
 							}
+							else {
+								std::cerr << "error" << std::endl;
+							}
 						}
 
 					}
-
+					std::cerr << "output..." << std::endl;
 					// ファイル出力
 					for (int k = 0; k < SUBSET_SIZE; k++) {
 						if (!is_echo_state_property[k]) continue;
