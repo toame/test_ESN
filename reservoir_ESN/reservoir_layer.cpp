@@ -1,7 +1,16 @@
 ﻿#include "reservoir_layer.h"
+double sinc(const double x) {
+	if (x == 0) return 1.0;
+	return sin(PI * x) / (PI * x);
+}
+double gauss(double y) { return exp(-y * y / (2.0 * 0.4 * 0.4)) / (sqrt(PI * 2) * 0.4); }
+double oddsinc(double y) {
+	if (y <= 0) return sin(PI * y) / (PI * (y + 1));
+	else return sin(PI * -y) / (PI * (y - 1));
+}
 reservoir_layer::reservoir_layer() {}
 reservoir_layer::reservoir_layer(const int unit_size, const int connection_degree, const double iss_factor, const double weight_factor, const double bias_factor, const double p,
-		double (*nonlinear)(double), const unsigned int seed, const int wash_out, const std::string toporogy_type) {
+		std::string nonlinear_name, const unsigned int seed, const int wash_out, const std::string toporogy_type) {
 	this->unit_size = unit_size;
 	this->connection_degree = connection_degree;
 	this->input_signal_factor = iss_factor;
@@ -9,9 +18,12 @@ reservoir_layer::reservoir_layer(const int unit_size, const int connection_degre
 	this->bias_factor = bias_factor;
 	this->p = p;
 	this->seed = seed;
-	this->nonlinear = nonlinear;
+	this->nonlinear_name = nonlinear_name;
 	this->wash_out = wash_out;
 	this->toporogy_type = toporogy_type;
+	if (nonlinear_name == "sinc") nonlinear = sinc;
+	else if (nonlinear_name == "tanh") nonlinear = tanh;
+	else assert(false);
 	if (bias_factor < -0.9) this->bias_factor = input_signal_factor * weight_factor;
 	node_type.resize(unit_size + 1);
 	adjacency_list.resize(unit_size + 1, std::vector<int>(connection_degree + 1));
@@ -21,17 +33,23 @@ reservoir_layer::reservoir_layer(const int unit_size, const int connection_degre
 }
 
 std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const std::vector<double> p_set, const std::vector<double> bias_set, const std::vector<double> alpha_set,
-	const std::vector<double> sigma_set, const int unit_size, const int connection_degree, double (*nonlinear)(double), const unsigned int seed, const int wash_out, const std::string toporogy_type) {
+	const std::vector<double> sigma_set, const int unit_size, const int connection_degree, std::vector<std::string> nonlinear_vec, const unsigned int loop, const int wash_out, const std::string toporogy_type) {
 	std::vector<reservoir_layer> ret;
-	for (auto p : p_set) {
-		for (auto bias : bias_set) {
-			for (auto alpha : alpha_set) {
-				for (auto sigma : sigma_set) {
-					ret.push_back(reservoir_layer(unit_size, connection_degree, alpha, sigma, bias, p, nonlinear, seed, wash_out, toporogy_type));
+	for (int seed = 0; seed < loop; seed++) {
+		for (auto nonlinear : nonlinear_vec) {
+			for (auto p : p_set) {
+				for (auto bias : bias_set) {
+					for (auto alpha : alpha_set) {
+						for (auto sigma : sigma_set) {
+							ret.push_back(reservoir_layer(unit_size, connection_degree, alpha, sigma, bias, p, nonlinear, seed, wash_out, toporogy_type));
+						}
+					}
 				}
 			}
 		}
 	}
+	std::mt19937 mt;
+	std::shuffle(ret.begin(), ret.end(), mt);
 	std::cerr << ret.size() << std::endl;
 	return ret;
 }

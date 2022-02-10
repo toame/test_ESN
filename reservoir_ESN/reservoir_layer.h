@@ -7,9 +7,10 @@
 #include <cassert>
 #include <fstream>
 #include <string>
+#define PI (3.14159265358979)
 #define LINEAR (0)
 #define NON_LINEAR (1)
-
+typedef double (*NONLINEAR)(const double x);
 class reservoir_layer {
 public:
 	unsigned int unit_size;								//　ノード数
@@ -23,6 +24,7 @@ public:
 	unsigned int seed;									//	リザーバーの構造を決定するシード値（構造のシードと重みのシードなどの分割をしてもいいかも）
 	double p;											//	ノードで使用される活性化関数の非線形の割合
 	double (*nonlinear)(double);						//	非線形関数の関数ポインタ
+	std::string nonlinear_name;
 	std::vector<int> node_type;							//	n番目のノードの線形/非線形の種類
 	std::string toporogy_type;
 	std::mt19937 mt;
@@ -31,7 +33,7 @@ public:
 
 	reservoir_layer();
 	reservoir_layer(const int unit_size, const int connection_degree, const double iss_factor, const double weight_factor, const double bias_factor, const double p,
-		double (*nonlinear)(double), const unsigned int seed, const int wash_out, const std::string toporogy_type);
+		std::string nonlinear_name, const unsigned int seed, const int wash_out, const std::string toporogy_type);
 
 	void generate_reservoir();
 	void reservoir_update(const std::vector<double>& input_signal, std::vector<std::vector<double>>& output_node, const int t_size, int seed = 0);
@@ -40,6 +42,6 @@ public:
 	double activation_function(const double x, const int type);
 	
 	static std::vector<reservoir_layer> generate_reservoir(const std::vector<double> p_set, const std::vector<double> bias_set, const std::vector<double> alpha_set,
-		const std::vector<double> sigma_set, const int unit_size, const int connection_degree, double (*nonlinear)(double), const unsigned int seed, const int wash_out, const std::string toporogy_type);
+		const std::vector<double> sigma_set, const int unit_size, const int connection_degree, std::vector<std::string> nonlinear_vec, const unsigned int seed, const int wash_out, const std::string toporogy_type);
 
 };
