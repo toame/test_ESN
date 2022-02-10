@@ -10,6 +10,8 @@ df = pd.read_csv(file, sep=',',comment='#')
 print(df.columns)
 df = df[["p", "input_signal_factor", "bias_factor", "weight_factor", "L", "NL", "NL_old", "NL1_old", "narma3", "narma4", 
          "approx_3_1.5", "approx_6_1.0","approx_11_0.5" ]]
+df = df[df["narma3"] <= 0.999]
+df = df["narma3"]
 #print(df)
 corr_mat = df.corr(method='pearson')
 
