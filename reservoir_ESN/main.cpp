@@ -170,7 +170,7 @@ int main(void) {
 					}
 					std::cerr << double((re + 1) * 100)/reservoir_set.size() << "[%]," <<  re << "," << reservoir_subset.size() << std::endl;
 
-					std::vector<std::vector<double>> opt_nmse(SUBSET_SIZE, std::vector<double>(teacher_signals[TRAIN].size(), 1e+10));
+					std::vector<std::vector<double>> opt_nmse(SUBSET_SIZE, std::vector<double>(teacher_signals[TRAIN].size(), 2));
 					std::vector < std::vector<double>> opt_lm2(SUBSET_SIZE, std::vector<double>(teacher_signals[TRAIN].size()));
 					std::vector < std::vector <std::vector<double>>> opt_w(SUBSET_SIZE, std::vector <std::vector<double>>(teacher_signals[TRAIN].size()));
 
@@ -217,8 +217,6 @@ int main(void) {
 						}
 						for (i = 0; i < teacher_signals[TRAIN].size(); i++) {
 							output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T, teacher_signals[TRAIN][i].second, wash_out, step, unit_size);
-							double opt_lm = 0;
-							double opt_lm_nmse = 1e+9;
 							for (lm = 0; lm < lambda_step; lm++) {
 								for (j = 0; j <= unit_size; j++) {
 									output_learning[k].A[j][j] = A[k][j] + pow(10, -14 + lm * 2);
@@ -239,7 +237,7 @@ int main(void) {
 						if (!reservoir_subset[k].is_echo_state_property) continue;
 						for (int i = 0; i < teacher_signals[TRAIN].size(); i++) {
 							for (int lm = 0; lm < lambda_step; lm++) {
-								if (nmse[k][i][lm] < opt_nmse[k][i]) {
+								if (lm == 0 || nmse[k][i][lm] < opt_nmse[k][i]) {
 									opt_nmse[k][i] = nmse[k][i][lm];
 									opt_lm2[k][i] = lm;
 									opt_w[k][i] = w[k][i][lm];
@@ -247,6 +245,7 @@ int main(void) {
 							}
 						}
 					}
+					
 					std::vector<double> L(reservoir_subset.size());
 					std::vector<double> NL(reservoir_subset.size());
 					std::vector<double> NL_old(reservoir_subset.size());
