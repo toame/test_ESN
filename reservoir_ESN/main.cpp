@@ -180,9 +180,8 @@ int main(void) {
 
 					// 複数のリザーバーの時間発展をまとめて処理
 					std::cerr << "reservoir_update..." << std::endl;
-//#pragma omp parallel for num_threads(THREAD_NUM)
+#pragma omp parallel for num_threads(THREAD_NUM)
 					for (int k = 0; k < reservoir_subset.size(); k++) {
-						std::cerr << k << std::endl;
 						reservoir_subset[k].generate_reservoir();
 						
 						reservoir_subset[k].reservoir_update(input_signal[TRAIN], output_node[k][TRAIN], step);
