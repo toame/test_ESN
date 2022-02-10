@@ -49,7 +49,7 @@ void reservoir_layer::generate_reservoir() {
 		if (toporogy_type == "random") {
 			std::shuffle(permutation.begin(), permutation.end(), mt);
 			for (int k = 1; k <= connection_degree; k++) {
-				adjacency_list[n][k] = permutation[k];
+				adjacency_list[n][k] = permutation[k - 1];
 			}
 		}
 		else if (toporogy_type == "ring") {
@@ -60,16 +60,14 @@ void reservoir_layer::generate_reservoir() {
 			std::cerr << "no found toporogy_type:" << toporogy_type << std::endl;
 		}
 	}
-
 	//各ノードが線形か非線形かを決定
 	for (int n = 1; n <= unit_size; n++) {
-		if (permutation[n] <= unit_size * p) {
+		if (permutation[n - 1] <= unit_size * p) {
 			node_type[n] = NON_LINEAR;
 		}
 		else
 			node_type[n] = LINEAR;
 	}
-
 	for (int n = 1; n <= unit_size; n++) {
 		//リザーバー層の結合重みを決定
 		weight_reservoir[n][0] = rand_minus1toplus1(mt);
@@ -92,7 +90,7 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 	output_node[0][0] = 1.0;
 	for (int n = 1; n <= unit_size; n++) output_node[0][n] = rand_minus1toplus1(mt2);
 	std::vector<double> input_sum_node(unit_size + 1, 0);
-	for (int t = 0; t <= t_size; t++) {
+	for (int t = 0; t < t_size; t++) {
 		for (int n = 1; n <= unit_size; n++) {
 			input_sum_node[n] = input_signal_strength[n] * input_signal[t];
 			for (int k = 1; k <= connection_degree; k++) {

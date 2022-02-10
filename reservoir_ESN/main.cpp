@@ -22,7 +22,7 @@
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (3000)
 #define TRUNC_EPSILON (1.7e-4)
-#define THREAD_NUM (20)
+#define THREAD_NUM (15)
 #define SUBSET_SIZE (THREAD_NUM * 4)
 double sinc(const double x) {
 	if (x == 0) return 1.0;
@@ -75,16 +75,20 @@ int main(void) {
 	std::string task_name;
 	std::string function_name;
 
-	std::vector<std::vector<std::vector<std::vector<double>>>> output_node(SUBSET_SIZE, std::vector<std::vector<std::vector<double>>>(PHASE_NUM, std::vector<std::vector<double>>(step + 2, std::vector<double>(MAX_UNIT_SIZE + 1, 0))));
-	std::vector < std::vector<std::vector<std::vector<double>>>> w(SUBSET_SIZE, std::vector<std::vector<std::vector<double>>>(MAX_TASK_SIZE, std::vector<std::vector<double>>(lambda_step))); // 各リザーバーの出力重み
-	std::vector<std::vector<std::vector<double>>> nmse(SUBSET_SIZE, std::vector<std::vector<double>>(MAX_TASK_SIZE, std::vector<double>(lambda_step)));						// 各リザーバーのnmseを格納
+	
 	std::vector<double> approx_nu_set({ -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0 });
 	std::vector<double> approx_tau_set({ -2, 0, 1, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0 });
 	std::vector<int> narma_tau_set({ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
 	for (int r = 0; r < unit_sizes.size(); r++) {
+		
 		const int unit_size = unit_sizes[r];
 		const std::string task_name = task_names[r];
 		const std::string toporogy_type = toporogy[r];
+
+		std::vector<std::vector<std::vector<std::vector<double>>>> output_node(SUBSET_SIZE, std::vector<std::vector<std::vector<double>>>(PHASE_NUM, std::vector<std::vector<double>>(step + 1, std::vector<double>(unit_size + 1, 0))));
+		std::vector < std::vector<std::vector<std::vector<double>>>> w(SUBSET_SIZE, std::vector<std::vector<std::vector<double>>>(MAX_TASK_SIZE, std::vector<std::vector<double>>(lambda_step))); // 各リザーバーの出力重み
+		std::vector<std::vector<std::vector<double>>> nmse(SUBSET_SIZE, std::vector<std::vector<double>>(MAX_TASK_SIZE, std::vector<double>(lambda_step)));						// 各リザーバーのnmseを格納
+
 		int connection_degree = unit_size / 10;
 		if (toporogy_type == "ring") connection_degree = 1;
 		std::vector<std::vector<double>> input_signal(PHASE_NUM);
@@ -176,10 +180,11 @@ int main(void) {
 
 					// 複数のリザーバーの時間発展をまとめて処理
 					std::cerr << "reservoir_update..." << std::endl;
-#pragma omp parallel for num_threads(THREAD_NUM)
+//#pragma omp parallel for num_threads(THREAD_NUM)
 					for (int k = 0; k < reservoir_subset.size(); k++) {
+						std::cerr << k << std::endl;
 						reservoir_subset[k].generate_reservoir();
-
+						
 						reservoir_subset[k].reservoir_update(input_signal[TRAIN], output_node[k][TRAIN], step);
 						reservoir_subset[k].reservoir_update(input_signal[VAL], output_node[k][VAL], step);
 						reservoir_subset[k].reservoir_update(input_signal[TEST], output_node[k][TEST], step);

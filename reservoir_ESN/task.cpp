@@ -260,6 +260,12 @@ double calc_mean_squared_average(const std::vector<double>& teacher_signal, cons
 	//std::ofstream outputfile("output_predict/" + name + ".txt", std::ios::app);
 	//if(show)
 	//	outputfile << "t,predict_test,teacher" << std::endl;
+	assert(output_node.size() == step + 1);
+	assert(weight.size() == unit_size + 1);
+	for (int t = wash_out + 1; t < step; t++) {
+		assert(output_node[t + 1].size() == unit_size + 1);
+	}
+	
 	for (int t = wash_out + 1; t < step; t++) {
 		const double reservoir_predict_signal = cblas_ddot(unit_size + 1, weight.data(), 1, output_node[t + 1].data(), 1);
 		//double reservoir_predict_signal = 0.0;
