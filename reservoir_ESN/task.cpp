@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <cassert>
 #define PHASE_NUM (3)
 void generate_input_signal_random(std::vector<double>& input_signal, const int u_min, const int u_delta, const int step, const int seed) {
 	std::mt19937 mt(seed);
@@ -218,7 +219,10 @@ void task_for_calc_of_NL(const std::vector<double>& input_signal, std::vector<do
 	for (int t = 0; t < step; t++) {
 		double x = 1.0;
 		for (int i = 0; i < d.size(); i++) {
-			if (t - (i + 1) >= 0) x *= std::legendre(d[i], input_signal[t - (i + 1)]);
+			if (t - (i + 1) >= 0) {
+				assert(-1.0 < input_signal[t - (i + 1)] && input_signal[t - (i + 1)] < 1.0);
+				x *= std::legendre(d[i], input_signal[t - (i + 1)]);
+			}
 		}
 		teacher_signal[t] = x;
 	}
@@ -228,6 +232,7 @@ void task_for_calc_of_NL2(const std::vector<double>& input_signal, std::vector<d
 	teacher_signal.resize(step);
 	for (int t = 0; t < step; t++) {
 		double x = 1.0;
+		assert(-1.0 < input_signal[t] && input_signal[t] < 1.0);
 		x *= std::legendre(nu, input_signal[t]);
 		teacher_signal[t] = x;
 	}
