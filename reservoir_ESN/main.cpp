@@ -25,7 +25,7 @@
 #define MAX_TASK_SIZE (3000)
 #define TRUNC_EPSILON (1.7e-4)
 #define THREAD_NUM (14)
-#define SUBSET_SIZE (THREAD_NUM * 5)
+#define SUBSET_SIZE (THREAD_NUM * 2)
 
 #include <sstream>
 
@@ -44,7 +44,7 @@ int main(void) {
 	const int TRIAL_NUM = 2;	// ループ回数
 	const int step = 4000;
 	const int wash_out = 400;
-	std::vector<int> unit_sizes = { 100, 100 };
+	std::vector<int> unit_sizes = { 200, 200 };
 	std::vector<std::string> toporogy = { "random", "ring" };
 	std::vector<std::string> task_names = { "NL", "NL" };
 	if (unit_sizes.size() != task_names.size()) return 0;
@@ -179,7 +179,7 @@ int main(void) {
 			int i, t, j;
 			std::vector<output_learning> output_learning(1000);
 			std::vector<std::vector<double>> A(1000);
-			std::cerr << "reservoir_training..." << std::endl;
+			std::cerr << "reservoir_traning..." << std::endl;
 #pragma omp parallel for num_threads(THREAD_NUM)
 			// 重みの学習を行う
 			for (int k = 0; k < reservoir_subset.size(); k++) {
@@ -203,13 +203,13 @@ int main(void) {
 						output_node_T.push_back(output_node[k][TRAIN][t + 1][i]);
 					}
 				}
-				for (i = 0; i < teacher_signals[TRAIN].size(); i++) {
-					output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T, teacher_signals[TRAIN][i].second, wash_out, step, unit_size);
-					for (lm = 0; lm < lambda_step; lm++) {
-						for (j = 0; j <= unit_size; j++) {
-							output_learning[k].A[j][j] = A[k][j] + pow(10, -14 + lm * 2);
-						}
-						output_learning[k].IncompleteCholeskyDecomp2(unit_size + 1);
+				for (lm = 0; lm < lambda_step; lm++) {
+					for (j = 0; j <= unit_size; j++) {
+						output_learning[k].A[j][j] = A[k][j] + pow(10, -12 + lm * 2);
+					}
+					output_learning[k].IncompleteCholeskyDecomp2(unit_size + 1);
+					for (i = 0; i < teacher_signals[TRAIN].size(); i++) {
+						output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T, teacher_signals[TRAIN][i].second, wash_out, step, unit_size);
 						double eps = 1e-12;
 						int itr = 10;
 						output_learning[k].ICCGSolver(unit_size + 1, itr, eps);
