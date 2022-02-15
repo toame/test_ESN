@@ -26,7 +26,7 @@
 #define MAX_TASK_SIZE (1000)
 #define TRUNC_EPSILON (1.7e-4)
 #define THREAD_NUM (60)
-#define SUBSET_SIZE (THREAD_NUM * 10)
+#define SUBSET_SIZE (THREAD_NUM * 1)
 
 #include <sstream>
 
@@ -45,7 +45,7 @@ int main(void) {
 	const int TRIAL_NUM = 2;	// ループ回数
 	const int step = 4000;
 	const int wash_out = 400;
-	std::vector<int> unit_sizes = { 100, 100 };
+	std::vector<int> unit_sizes = { 50, 50 };
 	std::vector<std::string> toporogy = { "random", "ring" };
 	std::vector<std::string> task_names = { "NL", "NL" };
 	if (unit_sizes.size() != task_names.size()) return 0;
@@ -178,9 +178,13 @@ int main(void) {
 			std::vector<reservoir_layer> reservoir_subset_tmp;
 			for (int k = 0; k < reservoir_subset.size(); k++) {
 				if (reservoir_subset[k].is_echo_state_property) {
+					output_node[reservoir_subset_tmp.size()][TRAIN] = output_node[k][TRAIN];
+					output_node[reservoir_subset_tmp.size()][VAL] = output_node[k][VAL];
+					output_node[reservoir_subset_tmp.size()][TEST] = output_node[k][TEST];
 					reservoir_subset_tmp.push_back(reservoir_subset[k]);
 				}
 			}
+			std::cerr << reservoir_subset.size() << "," << reservoir_subset_tmp.size() << std::endl;
 			reservoir_subset = reservoir_subset_tmp;
 			int lm;
 
@@ -193,7 +197,6 @@ int main(void) {
 #pragma omp parallel for num_threads(THREAD_NUM)
 			// 重みの学習を行う
 			for (int k = 0; k < reservoir_subset.size(); k++) {
-				if (!reservoir_subset[k].is_echo_state_property) continue;
 				output_learning[k].generate_simultaneous_linear_equationsA(output_node[k][TRAIN], wash_out, step, unit_size);
 			}
 #pragma omp parallel for private(i) num_threads(THREAD_NUM)
@@ -216,7 +219,7 @@ int main(void) {
 				for (lm = 0; lm < lambda_step; lm++) {
 					//std::cerr << k << "," << lm << std::endl;
 					for (j = 0; j <= unit_size; j++) {
-						output_learning[k].A[j][j] = A[k][j] + pow(10, -12 + lm * 2);
+						output_learning[k].A[j][j] = A[k][j] + pow(10, -14 + lm * 2);
 					}
 					output_learning[k].IncompleteCholeskyDecomp2(unit_size + 1);
 					for (i = 0; i < teacher_signals[TRAIN].size(); i++) {
@@ -233,7 +236,6 @@ int main(void) {
 
 			// 検証データでもっとも性能の良いリザーバーを選択
 			for (int k = 0; k < reservoir_subset.size(); k++) {
-				if (!reservoir_subset[k].is_echo_state_property) continue;
 				for (int i = 0; i < teacher_signals[TRAIN].size(); i++) {
 					for (int lm = 0; lm < lambda_step; lm++) {
 						if (lm == 0 || nmse[k][i][lm] < opt_nmse[k][i]) {
