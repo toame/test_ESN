@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <chrono>
 #include <cblas.h>
 #include <chrono>
 #include <random>
@@ -22,10 +23,10 @@
 #define VAL (1)
 #define TEST (2)
 #define MAX_UNIT_SIZE (200)
-#define MAX_TASK_SIZE (3000)
+#define MAX_TASK_SIZE (1000)
 #define TRUNC_EPSILON (1.7e-4)
-#define THREAD_NUM (14)
-#define SUBSET_SIZE (THREAD_NUM * 2)
+#define THREAD_NUM (60)
+#define SUBSET_SIZE (THREAD_NUM * 10)
 
 #include <sstream>
 
@@ -44,7 +45,7 @@ int main(void) {
 	const int TRIAL_NUM = 2;	// ループ回数
 	const int step = 4000;
 	const int wash_out = 400;
-	std::vector<int> unit_sizes = { 200, 200 };
+	std::vector<int> unit_sizes = { 100, 100 };
 	std::vector<std::string> toporogy = { "random", "ring" };
 	std::vector<std::string> task_names = { "NL", "NL" };
 	if (unit_sizes.size() != task_names.size()) return 0;
@@ -70,7 +71,7 @@ int main(void) {
 	std::string function_name;
 
 
-	std::vector<double> approx_nu_set({ -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0 });
+	std::vector<double> approx_nu_set({ -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 });
 	std::vector<double> approx_tau_set({ -2, 0, 1, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0 });
 	std::vector<int> narma_tau_set({ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
 	for (int r = 0; r < unit_sizes.size(); r++) {
@@ -146,17 +147,18 @@ int main(void) {
 		}
 		outputfile << std::endl;
 		std::cerr << teacher_signals[TRAIN].size() << std::endl;
-		std::chrono::system_clock::time_point  start, end; // 型は auto で可
-		start = std::chrono::system_clock::now(); // 計測開始時間
 		auto reservoir_set = reservoir_layer::generate_reservoir(p_set, bias_set, alpha_set, sigma_set, unit_size, connection_degree, function_names, 2, wash_out, toporogy_type);
 
 		std::vector<reservoir_layer> reservoir_subset;
+		std::chrono::system_clock::time_point  start, end; // 型は auto で可
+		start = std::chrono::system_clock::now(); // 計測開始時間
+	   // 処理
 		for (int re = 0; re < reservoir_set.size(); re++) {
 			reservoir_subset.push_back(reservoir_set[re]);
 			if (reservoir_subset.size() < SUBSET_SIZE && re + 1 < reservoir_set.size()) {
 				continue;
 			}
-			std::cerr << double((re + 1) * 100) / reservoir_set.size() << "[%]," << re << "," << reservoir_subset.size() << std::endl;
+			
 
 			std::vector<std::vector<double>> opt_nmse(SUBSET_SIZE, std::vector<double>(teacher_signals[TRAIN].size(), 2));
 			std::vector < std::vector<double>> opt_lm2(SUBSET_SIZE, std::vector<double>(teacher_signals[TRAIN].size()));
@@ -173,13 +175,21 @@ int main(void) {
 				reservoir_subset[k].reservoir_update(input_signal[TEST], output_node[k][TEST], step);
 				reservoir_subset[k].calc_echo_state_property(input_signal[VAL]);
 			}
+			std::vector<reservoir_layer> reservoir_subset_tmp;
+			for (int k = 0; k < reservoir_subset.size(); k++) {
+				if (reservoir_subset[k].is_echo_state_property) {
+					reservoir_subset_tmp.push_back(reservoir_subset[k]);
+				}
+			}
+			reservoir_subset = reservoir_subset_tmp;
 			int lm;
 
 			int opt_k = 0;
 			int i, t, j;
 			std::vector<output_learning> output_learning(1000);
 			std::vector<std::vector<double>> A(1000);
-			std::cerr << "reservoir_traning..." << std::endl;
+			std::vector<std::vector<double>> output_node_T(1000);
+			std::cerr << "reservoir_training..." << std::endl;
 #pragma omp parallel for num_threads(THREAD_NUM)
 			// 重みの学習を行う
 			for (int k = 0; k < reservoir_subset.size(); k++) {
@@ -188,7 +198,6 @@ int main(void) {
 			}
 #pragma omp parallel for private(i) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
-				if (!reservoir_subset[k].is_echo_state_property) continue;
 				A[k].resize(unit_size + 1);
 				for (i = 0; i <= unit_size; i++) {
 					A[k][i] = output_learning[k].A[i][i];
@@ -196,20 +205,22 @@ int main(void) {
 			}
 #pragma omp parallel for  private(lm, i, t, j) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
-				if (!reservoir_subset[k].is_echo_state_property) continue;
-				std::vector<double> output_node_T;
 				for (i = 0; i <= unit_size; i++) {
 					for (t = wash_out + 1; t < step; t++) {
-						output_node_T.push_back(output_node[k][TRAIN][t + 1][i]);
+						output_node_T[k].push_back(output_node[k][TRAIN][t + 1][i]);
 					}
 				}
+			}
+#pragma omp parallel for  private(lm, i, t, j) num_threads(THREAD_NUM)
+			for (int k = 0; k < reservoir_subset.size(); k++) {
 				for (lm = 0; lm < lambda_step; lm++) {
+					//std::cerr << k << "," << lm << std::endl;
 					for (j = 0; j <= unit_size; j++) {
 						output_learning[k].A[j][j] = A[k][j] + pow(10, -12 + lm * 2);
 					}
 					output_learning[k].IncompleteCholeskyDecomp2(unit_size + 1);
 					for (i = 0; i < teacher_signals[TRAIN].size(); i++) {
-						output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T, teacher_signals[TRAIN][i].second, wash_out, step, unit_size);
+						output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T[k], teacher_signals[TRAIN][i].second, wash_out, step, unit_size);
 						double eps = 1e-12;
 						int itr = 10;
 						output_learning[k].ICCGSolver(unit_size + 1, itr, eps);
@@ -246,7 +257,6 @@ int main(void) {
 			std::cerr << "calc_L, calc_NL..." << std::endl;
 #pragma omp parallel for  private(i) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
-				if (!reservoir_subset[k].is_echo_state_property) continue;
 				std::cerr << k << ",";
 				for (i = 0; i < teacher_signals[TEST].size(); i++) {
 					const double test_nmse = calc_nmse(teacher_signals[TEST][i].second, opt_w[k][i], output_node[k][TEST], unit_size, wash_out, step, false);
@@ -280,7 +290,6 @@ int main(void) {
 			std::cerr << "output..." << std::endl;
 			// ファイル出力
 			for (int k = 0; k < reservoir_subset.size(); k++) {
-				if (!reservoir_subset[k].is_echo_state_property) continue;
 				const double input_signal_factor = reservoir_subset[k].input_signal_factor;
 				const double weight_factor = reservoir_subset[k].weight_factor;
 				const int seed = reservoir_subset[k].seed;
@@ -300,6 +309,10 @@ int main(void) {
 				outputfile << std::endl;
 			}
 			reservoir_subset.clear();
+			end = std::chrono::system_clock::now();  // 計測終了時間
+			double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(); //処理に要した時間をミリ秒に変換
+			std::cerr << (re + 1) << "/" << reservoir_set.size() << " remain est." << (elapsed / 1000.0) / (re + 1) * (reservoir_set.size() - (re + 1)) / 3600.0 << "[hours]" << std::endl;
+
 		}
 		outputfile.close();
 	}
