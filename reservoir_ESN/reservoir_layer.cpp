@@ -48,8 +48,8 @@ std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const std::vect
 			}
 		}
 	}
-	//std::mt19937 mt;
-	//std::shuffle(ret.begin(), ret.end(), mt);
+	std::mt19937 mt;
+	std::shuffle(ret.begin(), ret.end(), mt);
 	std::cerr << ret.size() << std::endl;
 	return ret;
 }

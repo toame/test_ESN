@@ -272,7 +272,7 @@ int main(void) {
 						int tau = stoi(teacher_signals[TEST][i].first.substr(2));
 						const double tmp_L = 1.0 - test_nmse;
 						if (tmp_L >= TRUNC_EPSILON) L[k] += tmp_L;
-						if (tmp_L >= 0.5) maxL[k] = std::max(tau, maxL[k]);
+						if (tmp_L >= 0.9) maxL[k] = std::max(tau, maxL[k]);
 						sub_L[k].push_back(std::max(0.0, tmp_L));
 					}
 					else if (teacher_signals[TEST][i].first == "NL2") {
@@ -285,16 +285,17 @@ int main(void) {
 						int d_sum = 0;
 						std::vector<int> d = d_vec[TEST][idx];
 						int last = 0;
-						for (int k = 0; k < d.size(); k++) {
-							d_sum += d[k];
-							if (d[k] > 0) last = k;
+						for (int r = 0; r < d.size(); r++) {
+							d_sum += d[r];
+							if (d[r] > 0) last = r;
 						}
 						const double tmp_NL = d_sum * (1.0 - test_nmse);
+						const double tmp_NL1 = (1.0 - test_nmse);
 						if (tmp_NL >= TRUNC_EPSILON) {
-							NL1_old[k] += 1.0 - test_nmse;
+							NL1_old[k] += tmp_NL1;
 							NL_old[k] += tmp_NL;
 							sub_NL_old[k][d_sum] += tmp_NL;
-							if (tmp_NL >= 0.5) {
+							if (tmp_NL1 >= 0.5) {
 								NL_old_cut1[k] += tmp_NL;
 							}
 							if (last <= maxL[k]) {
