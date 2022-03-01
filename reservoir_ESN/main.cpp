@@ -25,7 +25,7 @@
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (1000)
 #define TRUNC_EPSILON (1.7e-4)
-#define THREAD_NUM (60)
+#define THREAD_NUM (12)
 #define SUBSET_SIZE (THREAD_NUM * 1)
 
 #include <sstream>
@@ -45,7 +45,7 @@ int main(void) {
 	const int TRIAL_NUM = 2;	// ループ回数
 	const int step = 4000;
 	const int wash_out = 400;
-	std::vector<int> unit_sizes = { 50, 50 };
+	std::vector<int> unit_sizes = { 100, 100 };
 	std::vector<std::string> toporogy = { "random", "ring" };
 	std::vector<std::string> task_names = { "NL", "NL" };
 	if (unit_sizes.size() != task_names.size()) return 0;
@@ -119,7 +119,7 @@ int main(void) {
 			for (int tau = 1; tau <= unit_size; tau++) {
 				std::vector<double> tmp_teacher_signal;
 				task_for_calc_of_L(input_signal[phase], tmp_teacher_signal, tau, step);
-				teacher_signals[phase].push_back({ "L", tmp_teacher_signal });
+				teacher_signals[phase].push_back({ "L_" + std::to_string(tau), tmp_teacher_signal });
 			}
 			std::cerr << "ok: " << d_vec[phase].size() << std::endl;
 			for (int nu = 2; nu <= unit_size; nu++) {
@@ -127,17 +127,18 @@ int main(void) {
 				task_for_calc_of_NL2(input_signal[phase], tmp_teacher_signal, nu, step);
 				teacher_signals[phase].push_back({ "NL2", tmp_teacher_signal });
 			}
-			for (auto& d : d_vec[phase]) {
+			//for (auto& d : d_vec[phase])
+			for (int i = 0; i < d_vec[phase].size(); i++) 
+			{
+				std::vector<int> d = d_vec[phase][i];
 				std::vector<double> tmp_teacher_signal;
 				task_for_calc_of_NL(input_signal[phase], tmp_teacher_signal, d, step);
-				int num = 0;
-				for (int i = 0; i < d.size(); i++) num += d[i];
-				teacher_signals[phase].push_back({ "NL_" + std::to_string(num) , tmp_teacher_signal });
+				teacher_signals[phase].push_back({ "NL_" + std::to_string(i) , tmp_teacher_signal });
 			}
 		}
 
 		// 設定出力
-		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,NL,NL_old,NL1_old";
+		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
 		for (int i = 2; i <= 7; i++) outputfile << ",NL_old_" << std::to_string(i);
 		for (int i = 2; i <= 50; i++) outputfile << ",NL" << std::to_string(i);
 		for (int i = 1; i <= 50; i++) outputfile << ",L" << std::to_string(i);
@@ -251,11 +252,14 @@ int main(void) {
 			std::vector<double> NL(reservoir_subset.size());
 			std::vector<double> NL_old(reservoir_subset.size());
 			std::vector<double> NL1_old(reservoir_subset.size());
+			std::vector<double> NL_old_cut1(reservoir_subset.size());
+			std::vector<double> NL_old_cut2(reservoir_subset.size());
 			std::vector <std::map<int, double>> sub_NL_old(reservoir_subset.size());
 			std::vector<std::vector<double>> sub_L(reservoir_subset.size());
 			std::vector<std::vector<double>> sub_NL(reservoir_subset.size());
 			std::vector<std::vector<double>> narma_task(reservoir_subset.size());
 			std::vector<std::vector<double>> approx_task(reservoir_subset.size());
+			std::vector<int> maxL(reservoir_subset.size());
 			std::cerr << "calc_L, calc_NL..." << std::endl;
 #pragma omp parallel for  private(i) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
@@ -264,9 +268,11 @@ int main(void) {
 					const double test_nmse = calc_nmse(teacher_signals[TEST][i].second, opt_w[k][i], output_node[k][TEST], unit_size, wash_out, step, false);
 					if (teacher_signals[TEST][i].first == "narma") narma_task[k].push_back(test_nmse);
 					else if (teacher_signals[TEST][i].first == "approx") approx_task[k].push_back(test_nmse);
-					else if (teacher_signals[TEST][i].first == "L") {
+					else if (teacher_signals[TEST][i].first.substr(0, 2) == "L_") {
+						int tau = stoi(teacher_signals[TEST][i].first.substr(2));
 						const double tmp_L = 1.0 - test_nmse;
 						if (tmp_L >= TRUNC_EPSILON) L[k] += tmp_L;
+						if (tmp_L >= 0.5) maxL[k] = std::max(tau, maxL[k]);
 						sub_L[k].push_back(std::max(0.0, tmp_L));
 					}
 					else if (teacher_signals[TEST][i].first == "NL2") {
@@ -275,13 +281,28 @@ int main(void) {
 						sub_NL[k].push_back(std::max(0.0, tmp_NL));
 					}
 					else if (teacher_signals[TEST][i].first.substr(0, 3) == "NL_") {
-						int d_sum = std::stoi(teacher_signals[TEST][i].first.substr(3));
+						int idx = stoi(teacher_signals[TEST][i].first.substr(3));
+						int d_sum = 0;
+						std::vector<int> d = d_vec[TEST][idx];
+						int last = 0;
+						for (int k = 0; k < d.size(); k++) {
+							d_sum += d[k];
+							if (d[k] > 0) last = k;
+						}
 						const double tmp_NL = d_sum * (1.0 - test_nmse);
 						if (tmp_NL >= TRUNC_EPSILON) {
 							NL1_old[k] += 1.0 - test_nmse;
 							NL_old[k] += tmp_NL;
 							sub_NL_old[k][d_sum] += tmp_NL;
+							if (tmp_NL >= 0.5) {
+								NL_old_cut1[k] += tmp_NL;
+							}
+							if (last <= maxL[k]) {
+								NL_old_cut2[k] += tmp_NL;
+							}
 						}
+
+						
 					}
 					else {
 						std::cerr << "error" << std::endl;
@@ -300,7 +321,7 @@ int main(void) {
 				const double p = reservoir_subset[k].p;
 				std::string function_name = reservoir_subset[k].nonlinear_name;
 				outputfile << toporogy_type << "," << function_name << "," << seed << "," << unit_size << "," << p << "," << input_signal_factor << "," << bias_factor1 << "," << weight_factor;
-				outputfile << "," << L[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k];
+				outputfile << "," << L[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k] << "," << NL_old_cut1[k] << "," << NL_old_cut2[k];
 
 				for (int i = 2; i < 8; i++) outputfile << "," << sub_NL_old[k][i];
 				for (int i = 0; i < std::min<int>(51 - 2, sub_NL[k].size()); i++) outputfile << "," << sub_NL[k][i];
