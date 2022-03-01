@@ -272,9 +272,11 @@ int main(void) {
 					else if (teacher_signals[TEST][i].first.substr(0, 2) == "L_") {
 						int tau = stoi(teacher_signals[TEST][i].first.substr(2));
 						const double tmp_L = 1.0 - test_nmse;
-						if (tmp_L >= TRUNC_EPSILON) L[k] += tmp_L;
+						if (tmp_L >= TRUNC_EPSILON) {
+							L[k] += tmp_L;
+							L_cut[k] += tmp_L * tmp_L;
+						}
 						if (tmp_L >= 0.9) {
-							L_cut[k] += tmp_L;
 							maxL[k] = std::max(tau, maxL[k]);
 						}
 						sub_L[k].push_back(std::max(0.0, tmp_L));
@@ -299,9 +301,7 @@ int main(void) {
 							NL1_old[k] += tmp_NL1;
 							NL_old[k] += tmp_NL;
 							sub_NL_old[k][d_sum] += tmp_NL;
-							if (tmp_NL1 >= 0.5) {
-								NL_old_cut1[k] += tmp_NL;
-							}
+							NL_old_cut1[k] += tmp_NL1 * tmp_NL1 * d_sum;
 							if (last <= maxL[k]) {
 								NL_old_cut2[k] += tmp_NL;
 							}
