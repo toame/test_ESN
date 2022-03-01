@@ -138,7 +138,7 @@ int main(void) {
 		}
 
 		// 設定出力
-		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
+		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,L_cut,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
 		for (int i = 2; i <= 7; i++) outputfile << ",NL_old_" << std::to_string(i);
 		for (int i = 2; i <= 50; i++) outputfile << ",NL" << std::to_string(i);
 		for (int i = 1; i <= 50; i++) outputfile << ",L" << std::to_string(i);
@@ -252,6 +252,7 @@ int main(void) {
 			std::vector<double> NL(reservoir_subset.size());
 			std::vector<double> NL_old(reservoir_subset.size());
 			std::vector<double> NL1_old(reservoir_subset.size());
+			std::vector<double> L_cut(reservoir_subset.size());
 			std::vector<double> NL_old_cut1(reservoir_subset.size());
 			std::vector<double> NL_old_cut2(reservoir_subset.size());
 			std::vector <std::map<int, double>> sub_NL_old(reservoir_subset.size());
@@ -272,7 +273,10 @@ int main(void) {
 						int tau = stoi(teacher_signals[TEST][i].first.substr(2));
 						const double tmp_L = 1.0 - test_nmse;
 						if (tmp_L >= TRUNC_EPSILON) L[k] += tmp_L;
-						if (tmp_L >= 0.9) maxL[k] = std::max(tau, maxL[k]);
+						if (tmp_L >= 0.9) {
+							L_cut[k] += tmp_L;
+							maxL[k] = std::max(tau, maxL[k]);
+						}
 						sub_L[k].push_back(std::max(0.0, tmp_L));
 					}
 					else if (teacher_signals[TEST][i].first == "NL2") {
@@ -322,7 +326,7 @@ int main(void) {
 				const double p = reservoir_subset[k].p;
 				std::string function_name = reservoir_subset[k].nonlinear_name;
 				outputfile << toporogy_type << "," << function_name << "," << seed << "," << unit_size << "," << p << "," << input_signal_factor << "," << bias_factor1 << "," << weight_factor;
-				outputfile << "," << L[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k] << "," << NL_old_cut1[k] << "," << NL_old_cut2[k];
+				outputfile << "," << L[k] << "," << L_cut[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k] << "," << NL_old_cut1[k] << "," << NL_old_cut2[k];
 
 				for (int i = 2; i < 8; i++) outputfile << "," << sub_NL_old[k][i];
 				for (int i = 0; i < std::min<int>(51 - 2, sub_NL[k].size()); i++) outputfile << "," << sub_NL[k][i];
