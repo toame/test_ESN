@@ -25,7 +25,7 @@
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (1000)
 #define TRUNC_EPSILON (1.7e-4)
-#define THREAD_NUM (12)
+#define THREAD_NUM (16)
 #define SUBSET_SIZE (THREAD_NUM * 1)
 
 #include <sstream>
@@ -74,6 +74,20 @@ int main(void) {
 	std::vector<double> approx_nu_set({ -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 });
 	std::vector<double> approx_tau_set({ -2, 0, 1, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0 });
 	std::vector<int> narma_tau_set({ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
+
+	std::ofstream output_NL_d("output_data/d_vec.csv");
+
+	std::vector<std::vector<std::vector<int>>> d_vec(PHASE_NUM);
+	generate_d_sequence_set(d_vec);
+	for (auto& d : d_vec[TRAIN]) {
+		for (int i = 0; i < d.size(); i++) {
+			if (i != 0) output_NL_d << ",";
+			output_NL_d << d[i];
+		}
+		output_NL_d << std::endl;
+	}
+	output_NL_d.close();
+
 	for (int r = 0; r < unit_sizes.size(); r++) {
 
 		const int unit_size = unit_sizes[r];
@@ -95,9 +109,9 @@ int main(void) {
 
 		std::ofstream outputfile("output_data/" + task_name + "_" + std::to_string(param1[r]) + "_" + to_string_with_precision(param2[r], 1) + "_" + std::to_string(unit_size) + "_" + toporogy_type + ".csv");
 		// 入力信号 教師信号の生成
-		std::vector<std::vector<std::vector<int>>> d_vec(PHASE_NUM);
+		
+
 		std::vector<std::string> task_name2;
-		generate_d_sequence_set(d_vec);
 		for (int phase = 0; phase < PHASE_NUM; phase++) {
 			generate_input_signal_random(input_signal[phase], -1.0, 2.0, step, phase + 1);
 			for (auto tau : narma_tau_set) {
@@ -141,8 +155,8 @@ int main(void) {
 		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,L_cut,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
 		for (int i = 2; i <= 7; i++) outputfile << ",NL_old_" << std::to_string(i);
 		for (int i = 2; i <= 50; i++) outputfile << ",NL" << std::to_string(i);
-		for (int i = 1; i <= 50; i++) outputfile << ",L" << std::to_string(i);
-		for (int i = 55; i <= std::min(unit_size, 100); i += 5) outputfile << ",L" << std::to_string(i);
+		for (int i = 1; i <= std::min(unit_size, 100); i++) outputfile << ",L" << std::to_string(i);
+		for (int i = 0; i < d_vec[TRAIN].size(); i++) outputfile << ",NL_" << std::to_string(i);
 		for (int i = 0; i < task_name2.size(); i++) {
 			outputfile << "," << task_name2[i];
 		}
@@ -258,6 +272,7 @@ int main(void) {
 			std::vector <std::map<int, double>> sub_NL_old(reservoir_subset.size());
 			std::vector<std::vector<double>> sub_L(reservoir_subset.size());
 			std::vector<std::vector<double>> sub_NL(reservoir_subset.size());
+			std::vector<std::map<int, double>> sub_NL_old2(reservoir_subset.size());
 			std::vector<std::vector<double>> narma_task(reservoir_subset.size());
 			std::vector<std::vector<double>> approx_task(reservoir_subset.size());
 			std::vector<int> maxL(reservoir_subset.size());
@@ -297,10 +312,11 @@ int main(void) {
 						}
 						const double tmp_NL = d_sum * (1.0 - test_nmse);
 						const double tmp_NL1 = (1.0 - test_nmse);
+						sub_NL_old2[k][idx] = tmp_NL1;
 						if (tmp_NL >= TRUNC_EPSILON) {
 							NL1_old[k] += tmp_NL1;
 							NL_old[k] += tmp_NL;
-							sub_NL_old[k][d_sum] += tmp_NL;
+							sub_NL_old[k][d_sum] += tmp_NL1 * tmp_NL1 * d_sum;
 							NL_old_cut1[k] += tmp_NL1 * tmp_NL1 * d_sum;
 							if (last <= maxL[k]) {
 								NL_old_cut2[k] += tmp_NL;
@@ -330,8 +346,8 @@ int main(void) {
 
 				for (int i = 2; i < 8; i++) outputfile << "," << sub_NL_old[k][i];
 				for (int i = 0; i < std::min<int>(51 - 2, sub_NL[k].size()); i++) outputfile << "," << sub_NL[k][i];
-				for (int i = 0; i < std::min<int>(51 - 1, sub_L[k].size()); i++) outputfile << "," << sub_L[k][i];
-				for (int i = 55 - 2; i < std::min<int>(101, sub_L[k].size()); i += 5) outputfile << "," << sub_L[k][i];
+				for (int i = 0; i < std::min<int>(100, sub_L[k].size()); i++) outputfile << "," << sub_L[k][i];
+				for (int i = 0; i < sub_NL_old2[k].size(); i++) outputfile << "," << sub_NL_old2[k][i];
 				for (int i = 0; i < narma_task[k].size(); i++) outputfile << "," << narma_task[k][i];
 				for (int i = 0; i < approx_task[k].size(); i++)	outputfile << "," << approx_task[k][i];
 				outputfile << std::endl;
