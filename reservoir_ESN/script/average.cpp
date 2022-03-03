@@ -9,13 +9,9 @@
 #include <algorithm>
 using namespace std;
 
-const double max_L = 100;
-const double max_NL = 500;
 const int splitL_C = 50;
 const int splitNL_C = 50;
-const string NLtype = "NL_old";
-const double split_L = max_L/splitL_C;
-const double split_NL = max_NL/splitNL_C;
+
 map<string, int> mp;
 vector<vector<string>> input_csv(string path) {
     string str_buf, str_conma_buf;
@@ -27,7 +23,6 @@ vector<vector<string>> input_csv(string path) {
         vector<string> elements;
         while (getline(i_stream, str_conma_buf, ',')) {
             if (rows == 0) {
-                cerr << str_conma_buf << endl;
                 mp[str_conma_buf] = columns;
             }
             else {
@@ -52,12 +47,29 @@ double calc_SD(std::vector<double>& data)
     }) / std::size(data);
     return std::sqrt(var);
 }
+double max_L, max_NL;
+double split_L, split_NL;
+int calc_L(string type, vector<string> elements) {
+    if (type == "L") {
+        max_L = 100;
+        split_L = max_L/splitL_C;
+        return stod(elements[mp[type]]) / split_L;
+    }
+}
+int calc_NL(string type, vector<string> elements) {
+    if (type == "NL_old") {
+        max_NL = 500;
+        split_NL = max_NL/splitNL_C;
+        return stod(elements[mp[type]]) / split_NL;
+    }
+}
 int main (void) {
     string root_path = "../output_data/";
     vector<string> pathes{"NL_0_0.0_100_random"};
     vector<string> task{"approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0"};
     for(auto path: pathes) {
         vector<vector<string>> data = input_csv(root_path + path + ".csv");
+        cerr << "read completed" << endl;
         map<string, vector<double>> nmse;
         map<string, vector<vector<double>>> nmse_vec;
         for(auto task_name: task) {
@@ -65,21 +77,22 @@ int main (void) {
             nmse_vec[task_name].resize(splitL_C * splitL_C);
         }
         vector<int> nmse_cnt(splitL_C * splitL_C);
+        string NL_type = "NL_old";
+        string L_type = "L";
         for(int r = 1; r < data.size(); r++) {
             vector<string> elements = data[r];
-            int NLr = stod(elements[mp[NLtype]]) / split_NL;
-            int Lr = stod(elements[mp["L"]]) / split_L;
-            
+            int NLr = calc_NL(NL_type, elements);
+            int Lr = calc_L(L_type, elements);
             nmse_cnt[NLr * splitL_C + Lr]++;
         }
         
         for(int r = 1; r < data.size(); r++) {
+            vector<string> elements = data[r];
+            int NLr = calc_NL(NL_type, elements);
+            int Lr = calc_L(L_type, elements);
             for(auto task_name: task) {
-                vector<string> elements = data[r];
                 vector<double>& nmse_task = nmse[task_name];
                 vector<vector<double>>& nmse_vec_task = nmse_vec[task_name];
-                int NLr = stod(elements[mp[NLtype]]) / split_NL;
-                int Lr = stod(elements[mp["L"]]) / split_L;
                 const double tmp_nmse = stod(elements[mp[task_name]]);
                 if (tmp_nmse > 1.05) 
                     continue;
@@ -87,20 +100,22 @@ int main (void) {
                 nmse_vec_task[NLr * splitL_C + Lr].push_back(tmp_nmse);
             }
         }
-        for(auto task_name: task){
-            std::ofstream ofs_csv_file(root_path + path + "_" + task_name + "_" + NLtype + "_average.csv");
-            cerr << root_path + path + "_average.csv" << endl;
-            ofs_csv_file << "L,NL,nmse" << endl;
-            for(int i = 0; i < splitL_C; i++) {
-                for(int j = 0; j < splitNL_C; j++) {
-                    int idx = i * splitL_C + j;
-                    if(nmse_cnt[idx]) {
-                        ofs_csv_file << split_L * j << "," 
-                                     << split_NL * i << "," 
-                                     << nmse[task_name][idx] / nmse_cnt[idx] << "," 
-                                     << nmse_cnt[idx] << "," << calc_SD(nmse_vec[task_name][idx]) << endl;
-                    }
+        
+        std::ofstream ofs_csv_file(root_path + path + "_" + NL_type + "_average.csv");
+        cerr << root_path + path + "_average.csv" << endl;
+        ofs_csv_file << "L,NL";
+        for(auto task_name: task) 
+            ofs_csv_file << "," << task_name << "_nmse," << task_name << "_count," << task_name << "_SD";
+        ofs_csv_file << endl;
+        for(int i = 0; i < splitL_C; i++) {
+            for(int j = 0; j < splitNL_C; j++) {
+                int idx = i * splitL_C + j;
+                if(nmse_cnt[idx] == 0) continue;
+                ofs_csv_file << split_L * j << "," << split_NL * i;
+                for(auto task_name: task) {
+                     ofs_csv_file << "," << nmse[task_name][idx] / nmse_cnt[idx] << ","  << nmse_cnt[idx] << "," << calc_SD(nmse_vec[task_name][idx]);
                 }
+                ofs_csv_file << endl;
             }
         }
     }
