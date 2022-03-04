@@ -19,28 +19,23 @@ vector<vector<string>> input_csv(string path) {
     ifstream ifs_csv_file(path);
     vector<vector<string>> ret;
     int columns = 0, rows = 0;
+    std::cerr << path << std::endl;
     while (getline(ifs_csv_file, str_buf)) {
         istringstream i_stream(str_buf);
         vector<string> elements;
+        columns = 0;
         while (getline(i_stream, str_conma_buf, ',')) {
-            if (rows == 0) {
-                mp[str_conma_buf] = columns;
-            }
-            else {
-                elements.push_back(str_conma_buf);
-            }
+            elements.push_back(str_conma_buf);
             columns++;
         }
         rows++;
+        if(elements.size() > 100) elements.resize(elements.size() + 1);
         ret.push_back(elements);
     }
     return ret;
 }
 double calc_SD(std::vector<double>& data)
 {
-    // 1つ目の手法(accumulate版)　※yumetodoさんのアイディア
-    // 第四引数に関数オブジェクトやラムダ式を渡せば加算以外の演算も可能
-    // (下コードでは引数のsumが直前の結果・eがその段階で読み込んだ配列の要素)
     const auto ave = std::accumulate(std::begin(data), std::end(data), 0.0) / std::size(data);
     const auto var = std::accumulate(std::begin(data), std::end(data), 0.0, [ave](double sum, const auto& e){
         const auto temp = e - ave;
@@ -57,12 +52,15 @@ void read_d_vec(string path) {
         vector<string> elements = data_vec[r];
         vector<double> tmp;
         for(int c = 0; c < elements.size(); c++) {
-            tmp.push_back(stod(elements[c]));
+            if(elements[c].length() > 0) {
+                tmp.push_back(stod(elements[c]));
+            }
         }
         d_vec["NL_" + to_string(r)] = tmp;
     }
     std::cerr << "d_vec_size:" << d_vec.size() << std::endl;
 }
+vector<vector<string>> r_data;
 int calc_L(string type, vector<string> elements) {
     if (mp.find(type) != mp.end()) {
         max_L = 100;
@@ -74,18 +72,35 @@ int calc_L(string type, vector<string> elements) {
 }
 int calc_NL(string type, vector<string> elements) {
     if (mp.find(type) != mp.end()) {
-        if(type == "NL_old") max_NL = 500;
+        if(type == "NL_old" || type == "NL_test") max_NL = 500;
         if(type == "NL_old_2") max_NL = 200;
         split_NL = max_NL/splitNL_C;
         return stod(elements[mp[type]]) / split_NL;
-    } else if(type == "NL_test") {
-        max_NL = 500;
-        split_NL = max_NL/splitNL_C;
+    } else {
+        assert(false);
+    }
+}
+string root_path = "../output_data/";
+vector<string> pathes{"NL_0_0.0_100_random"};
+vector<string> task{"approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0"};
+void add_NL() {
+    r_data[0].back() = "NL_test";
+    std::ofstream ofs_csv_file(root_path + "add.csv");
+    for(int i = 0; i < r_data[0].size();i++) {
+        if (i != 0)  ofs_csv_file << ",";
+        ofs_csv_file << r_data[0][i];
+    }
+    ofs_csv_file << endl;
+    for(int i = 0; i < r_data[0].size(); i++) {
+        mp[r_data[0][i]] = i;
+    }
+    for(int r = 1; r < r_data.size(); r++) {
         double NL = 0;
+        vector<string> elements = r_data[r];
         for(int i = 0; i < d_vec.size(); i++) {
             string task_name = "NL_" + to_string(i);
             //std::cerr << task_name << std::endl;
-            vector<double>d = d_vec[task_name];
+            vector<double> d = d_vec[task_name];
             int d_sum = 0;
             for(int i = 0; i < d.size(); i++) {
                 d_sum += d[i];
@@ -94,19 +109,22 @@ int calc_NL(string type, vector<string> elements) {
             if(tmp_NL > 0.01)
                 NL += d_sum * max(0.0, tmp_NL);
         }
-        return NL / split_NL;
-    } else {
-        assert(false);
+        r_data[r].back() = (to_string(NL));
+        for(int i = 0; i < elements.size();i++) {
+            ofs_csv_file << elements[i] << ",";
+        }
     }
+    return;
 }
 int main (void) {
-    string root_path = "../output_data/";
-    vector<string> pathes{"NL_0_0.0_100_random"};
-    vector<string> task{"approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0"};
+    
     read_d_vec(root_path);
     for(auto path: pathes) {
-        vector<vector<string>> data = input_csv(root_path + path + ".csv");
+        r_data = input_csv(root_path + path + ".csv");
         cerr << "read completed" << endl;
+        add_NL();
+        
+        cerr << "add completed" << endl;
         vector<string> NL_type_vec = {"NL_test"};
         string L_type = "L";
         for(auto NL_type: NL_type_vec) {
@@ -119,16 +137,16 @@ int main (void) {
             }
             vector<int> nmse_cnt(splitL_C * splitL_C);
             
-            for(int r = 1; r < data.size(); r++) {
-                vector<string> elements = data[r];
+            for(int r = 1; r < r_data.size(); r++) {
+                vector<string> elements = r_data[r];
                 int NLr = calc_NL(NL_type, elements);
                 int Lr = calc_L(L_type, elements);
                 //std::cerr << r << "," << NLr << "," << Lr << std::endl;
                 nmse_cnt[NLr * splitL_C + Lr]++;
             }
             
-            for(int r = 1; r < data.size(); r++) {
-                vector<string> elements = data[r];
+            for(int r = 1; r < r_data.size(); r++) {
+                vector<string> elements = r_data[r];
                 int NLr = calc_NL(NL_type, elements);
                 int Lr = calc_L(L_type, elements);
                 //std::cerr << r << "," << NLr << "," << Lr << std::endl;
