@@ -21,7 +21,7 @@ for path in args.data:
             ax4 = fig.add_subplot(1, 5, 4)
             ax5 = fig.add_subplot(1, 5, 5)
             df = pd.read_csv(args.root + path + '.csv', sep=',',comment='#')
-            for function_name, bias, ax in [("all", True, ax1), ("sinc", True, ax2), ("tanh", True, ax3), ("sinc", False, ax4),("tanh", False, ax5)]:
+            for num, function_name, bias, ax in [(1, "all", True, ax1), (2, "sinc", True, ax2), (3, "tanh", True, ax3), (4, "sinc", False, ax4),(5, "tanh", False, ax5)]:
                 print(path, NL_type, task)
                 df2 = df[df["function_name"] == function_name]
                 if bias:
@@ -39,6 +39,8 @@ for path in args.data:
                     data_y = df2[NL_type]
                 value = df2[task]
                 mappable = ax.scatter(data_x, data_y,s=1, marker=".", c = value, alpha=1, linewidths=1, norm=LogNorm(vmin=0.05, vmax=1.0), cmap='viridis_r')
+                if num != 1:
+                    ax.tick_params(axis = 'y', labelcolor = "None")
                 ax.set_ylim(0.0, 500)
                 ax.set_xlim(0.0, 50)
                 ax.set_title(function_name + "," + str(bias))
