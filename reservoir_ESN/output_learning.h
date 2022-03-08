@@ -2,8 +2,9 @@
 #include <vector>
 class output_learning {
 public:
-    std::vector<std::vector<double>> A, L;
-    std::vector<double> d, b, w;
+    std::vector<std::vector<std::vector<double>>> w;
+    std::vector<std::vector<double>> A, L, nmse;
+    std::vector<double> d, b;
     output_learning();
 
     //連立一次方程式Aw=bのAを生成
@@ -14,7 +15,6 @@ public:
 
     //連立一次方程式Aw=bのbを生成
     void generate_simultaneous_linear_equationsb_fast(const std::vector<double>& output_node, const std::vector<double>& yt_s, const int wash_out, const int step, const int n_size);
-
 
     // 連立一次方程式Aw = b をwについてICCGで解く
     // void Learning(std::vector<double>& w, const std::vector<std::vector<double>>& A, const std::vector<double>& b, const double lambda, const int n_size);
@@ -39,7 +39,7 @@ public:
      * @param[inout] eps 許容誤差(反復終了後,実際の誤差を返す)
      * @return 1:成功,0:失敗
      */
-    int ICCGSolver(int n, int& max_iter, double& eps);
+    int ICCGSolver(std::vector<double>& w, int n, int& max_iter, double& eps);
 
     /*!
      * 共役勾配法によりA・x=bを解く

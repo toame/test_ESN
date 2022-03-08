@@ -4,6 +4,8 @@
 #include <string>
 #include <cmath>
 #include <chrono>
+#include <cblas.h>
+#include <chrono>
 #include <random>
 #include <algorithm>
 #include <cstring>
@@ -13,7 +15,6 @@
 #include <map>
 #include <algorithm>
 #include <cmath>
-#include <cblas.h>
 #include "reservoir_layer.h"
 #include "output_learning.h"
 #include "task.h"
@@ -95,8 +96,6 @@ int main(void) {
 		const std::string toporogy_type = toporogy[r];
 
 		std::vector<std::vector<std::vector<std::vector<double>>>> output_node(SUBSET_SIZE, std::vector<std::vector<std::vector<double>>>(PHASE_NUM, std::vector<std::vector<double>>(step + 1, std::vector<double>(unit_size + 1, 0))));
-		std::vector < std::vector<std::vector<std::vector<double>>>> w(SUBSET_SIZE, std::vector<std::vector<std::vector<double>>>(MAX_TASK_SIZE, std::vector<std::vector<double>>(lambda_step))); // 各リザーバーの出力重み
-		std::vector<std::vector<std::vector<double>>> nmse(SUBSET_SIZE, std::vector<std::vector<double>>(MAX_TASK_SIZE, std::vector<double>(lambda_step)));						// 各リザーバーのnmseを格納
 
 		int connection_degree = unit_size / 10;
 		if (toporogy_type == "ring") connection_degree = 1;
@@ -108,21 +107,23 @@ int main(void) {
 		double sigma_min, d_sigma;
 
 		std::ofstream outputfile("output_data/" + task_name + "_" + std::to_string(param1[r]) + "_" + to_string_with_precision(param2[r], 1) + "_" + std::to_string(unit_size) + "_" + toporogy_type + ".csv");
-		
 		// 入力信号 教師信号の生成
+		
 		tasks reservoir_task[PHASE_NUM] = { tasks(step, 0), tasks(step, 1), tasks(step, 2) };
 		for (int phase = 0; phase < PHASE_NUM; phase++) {
 			reservoir_task[phase].generate_random_input(-1.0, 1.0);
-			reservoir_task[phase].generate_L_task(unit_size);
-			reservoir_task[phase].generate_NL_task();
 			reservoir_task[phase].generate_approx_task(approx_tau_set, approx_nu_set);
 			reservoir_task[phase].generate_narma_task(narma_tau_set);
-			
+			reservoir_task[phase].generate_L_task(unit_size);
+			reservoir_task[phase].generate_NL_task();
 		}
 
 		// 設定出力
 		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,L_cut,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
 		for (int i = 2; i <= 7; i++) outputfile << ",NL_old_" << std::to_string(i);
+		for (int i = 2; i <= 50; i++) outputfile << ",NL" << std::to_string(i);
+		for (int i = 1; i <= std::min(unit_size, 100); i++) outputfile << ",L" << std::to_string(i);
+		for (int i = 0; i < d_vec[TRAIN].size(); i++) outputfile << ",NL_" << std::to_string(i);
 		for (int i = 0; i < reservoir_task[TRAIN].output_tasks.size(); i++) {
 			outputfile << "," << reservoir_task[TRAIN].output_tasks[i].task_name;
 		}
@@ -140,7 +141,6 @@ int main(void) {
 				continue;
 			}
 			
-
 			std::vector<std::vector<double>> opt_nmse(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size(), 2));
 			std::vector < std::vector<double>> opt_lm2(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size()));
 			std::vector < std::vector <std::vector<double>>> opt_w(SUBSET_SIZE, std::vector <std::vector<double>>(reservoir_task[TRAIN].output_tasks.size()));
@@ -170,9 +170,9 @@ int main(void) {
 
 			int opt_k = 0;
 			int i, t, j;
-			std::vector<output_learning> output_learning(1000);
-			std::vector<std::vector<double>> A(1000);
-			std::vector<std::vector<double>> output_node_T(1000);
+			std::vector<output_learning> output_learning(reservoir_subset.size());
+			std::vector<std::vector<double>> A(reservoir_subset.size());
+			std::vector<std::vector<double>> output_node_T(reservoir_subset.size());
 			std::cerr << "reservoir_training..." << std::endl;
 #pragma omp parallel for num_threads(THREAD_NUM)
 			// 重みの学習を行う
@@ -197,7 +197,8 @@ int main(void) {
 #pragma omp parallel for  private(lm, i, t, j) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
 				for (lm = 0; lm < lambda_step; lm++) {
-					//std::cerr << k << "," << lm << std::endl;
+					output_learning[k].w.resize(reservoir_task[TRAIN].output_tasks.size(), std::vector<std::vector<double>>(lambda_step));
+					output_learning[k].nmse.resize(reservoir_task[TRAIN].output_tasks.size(), std::vector<double>(lambda_step));
 					for (j = 0; j <= unit_size; j++) {
 						output_learning[k].A[j][j] = A[k][j] + pow(10, -14 + lm * 2);
 					}
@@ -206,9 +207,8 @@ int main(void) {
 						output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T[k], reservoir_task[TRAIN].output_tasks[i].output_signal, wash_out, step, unit_size);
 						double eps = 1e-12;
 						int itr = 10;
-						output_learning[k].ICCGSolver(unit_size + 1, itr, eps);
-						w[k][i][lm] = output_learning[k].w;
-						nmse[k][i][lm] = calc_nmse(reservoir_task[VAL].output_tasks[i].output_signal, output_learning[k].w, output_node[k][VAL], unit_size, wash_out, step, false);
+						output_learning[k].ICCGSolver(output_learning[k].w[i][lm], unit_size + 1, itr, eps);
+						output_learning[k].nmse[i][lm] = calc_nmse(reservoir_task[VAL].output_tasks[i].output_signal, output_learning[k].w[i][lm], output_node[k][VAL], unit_size, wash_out, step, false);
 					}
 				}
 			}
@@ -218,10 +218,10 @@ int main(void) {
 			for (int k = 0; k < reservoir_subset.size(); k++) {
 				for (int i = 0; i < reservoir_task[TRAIN].output_tasks.size(); i++) {
 					for (int lm = 0; lm < lambda_step; lm++) {
-						if (lm == 0 || nmse[k][i][lm] < opt_nmse[k][i]) {
-							opt_nmse[k][i] = nmse[k][i][lm];
+						if (lm == 0 || output_learning[k].nmse[i][lm] < opt_nmse[k][i]) {
+							opt_nmse[k][i] = output_learning[k].nmse[i][lm];
 							opt_lm2[k][i] = lm;
-							opt_w[k][i] = w[k][i][lm];
+							opt_w[k][i] = output_learning[k].w[i][lm];
 						}
 					}
 				}
@@ -310,6 +310,7 @@ int main(void) {
 				outputfile << "," << L[k] << "," << L_cut[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k] << "," << NL_old_cut1[k] << "," << NL_old_cut2[k];
 
 				for (int i = 2; i < 8; i++) outputfile << "," << sub_NL_old[k][i];
+				for (int i = 0; i < std::min<int>(51 - 2, sub_NL[k].size()); i++) outputfile << "," << sub_NL[k][i];
 				for (int i = 0; i < std::min<int>(100, sub_L[k].size()); i++) outputfile << "," << sub_L[k][i];
 				for (int i = 0; i < sub_NL_old2[k].size(); i++) outputfile << "," << sub_NL_old2[k][i];
 				for (int i = 0; i < narma_task[k].size(); i++) outputfile << "," << narma_task[k][i];

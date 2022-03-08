@@ -114,7 +114,7 @@ int output_learning::IncompleteCholeskyDecomp2(int n) {
  * @param[inout] eps ‹–—eŒë·(”½•œI—¹Œã,ÀÛ‚ÌŒë·‚ğ•Ô‚·)
  * @return 1:¬Œ÷,0:¸”s
  */
-int output_learning::ICCGSolver(int n, int& max_iter, double& eps) {
+int output_learning::ICCGSolver(std::vector<double>& w, int n, int& max_iter, double& eps) {
 	if (n <= 0) return 0;
 
 	std::vector<double> r(n), p(n), y(n), r2(n);
