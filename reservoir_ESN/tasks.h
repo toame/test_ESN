@@ -19,7 +19,6 @@ public:
 	int seed;
 	std::vector<double> input_signal;								// 入力信号
 	std::vector<output_task> output_tasks;							// タスク
-	std::vector<double> task_nmse;									// nmse
 	std::mt19937 mt;
 	tasks(int step, int seed);
 	void generate_random_input(const int u_min, const int u_max);
