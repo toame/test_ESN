@@ -36,8 +36,7 @@ void task_for_function_approximation2(const std::vector<double>& input_signal, s
 		double sum = 0.0;
 		for (int r = std::max(0, t - tau); r <= t; r++) sum += input_signal[r];
 		double average = sum / sqrt((tau + 1.0));
-		output_signal.push_back(sin(nu * PI * average));
-
+		output_signal.push_back(sin(nu * PI * average + 0.25 * PI));
 	}
 }
 //  0.3, 0.05, 1.5, 0.1
