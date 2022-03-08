@@ -10,6 +10,7 @@ public:
 	double NL_old_cut1;
 	double NL_old_cut2;
 	double NL1_old;
+	std::vector<double> sub_L;
 	std::map<int, double> sub_NL_old2;
 	std::vector<double> sub_NL_old;
 	int maxL;
@@ -34,6 +35,7 @@ public:
 				maxL = std::max(tau, maxL);
 			}
 		}
+		sub_L.push_back(tmp_L);
 	}
 	void calc_NL(std::vector<int>&d, double nmse, std::string task_name) {
 		int idx = stoi(task_name.substr(3));

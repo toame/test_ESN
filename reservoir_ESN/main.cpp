@@ -113,18 +113,19 @@ int main(void) {
 		tasks reservoir_task[PHASE_NUM] = { tasks(step, 0), tasks(step, 1), tasks(step, 2) };
 		for (int phase = 0; phase < PHASE_NUM; phase++) {
 			reservoir_task[phase].generate_random_input(-1.0, 1.0);
-			reservoir_task[phase].generate_approx_task(approx_tau_set, approx_nu_set);
-			reservoir_task[phase].generate_narma_task(narma_tau_set);
 			reservoir_task[phase].generate_L_task(unit_size);
 			reservoir_task[phase].generate_NL_task();
+			reservoir_task[phase].generate_approx_task(approx_tau_set, approx_nu_set);
+			reservoir_task[phase].generate_narma_task(narma_tau_set);
+			
 		}
 
 		// 設定出力
 		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,L_cut,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
 		for (int i = 2; i <= 7; i++) outputfile << ",NL_old_" << std::to_string(i);
-		for (int i = 2; i <= 50; i++) outputfile << ",NL" << std::to_string(i);
-		for (int i = 1; i <= std::min(unit_size, 100); i++) outputfile << ",L" << std::to_string(i);
-		for (int i = 0; i < d_vec[TRAIN].size(); i++) outputfile << ",NL_" << std::to_string(i);
+		//for (int i = 2; i <= 50; i++) outputfile << ",NL" << std::to_string(i);
+		//for (int i = 1; i <= std::min(unit_size, 100); i++) outputfile << ",L" << std::to_string(i);
+		//for (int i = 0; i < d_vec[TRAIN].size(); i++) outputfile << ",NL_" << std::to_string(i);
 		for (int i = 0; i < reservoir_task[TRAIN].output_tasks.size(); i++) {
 			outputfile << "," << reservoir_task[TRAIN].output_tasks[i].task_name;
 		}
@@ -280,10 +281,10 @@ int main(void) {
 				outputfile << toporogy_type << "," << function_name << "," << seed << "," << unit_size << "," << p << "," << input_signal_factor << "," << bias_factor1 << "," << weight_factor;
 				outputfile << "," << perf[k].L << "," << perf[k].L_cut << "," << perf[k].NL << "," << perf[k].NL_old << "," << perf[k].NL1_old << "," << perf[k].NL_old_cut1 << "," << perf[k].NL_old_cut2;
 
-				for (int i = 2; i < 8; i++) outputfile << "," << sub_NL_old[k][i];
-				for (int i = 0; i < std::min<int>(51 - 2, sub_NL[k].size()); i++) outputfile << "," << sub_NL[k][i];
-				for (int i = 0; i < std::min<int>(100, sub_L[k].size()); i++) outputfile << "," << sub_L[k][i];
-				for (int i = 0; i < sub_NL_old2[k].size(); i++) outputfile << "," << sub_NL_old2[k][i];
+				for (int i = 2; i < 8; i++) outputfile << "," << perf[k].sub_NL_old[i];
+				//for (int i = 0; i < std::min<int>(51 - 2, perf[k].sub_NL.size()); i++) outputfile << "," << sub_NL[k][i];
+				for (int i = 0; i < std::min<int>(100, perf[k].sub_L.size()); i++) outputfile << "," << perf[k].sub_L[i];
+				for (int i = 0; i < perf[k].sub_NL_old2.size(); i++) outputfile << "," << perf[k].sub_NL_old2[i];
 				for (int i = 0; i < narma_task[k].size(); i++) outputfile << "," << narma_task[k][i];
 				for (int i = 0; i < approx_task[k].size(); i++)	outputfile << "," << approx_task[k][i];
 				outputfile << std::endl;
