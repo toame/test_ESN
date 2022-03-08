@@ -3,3 +3,4 @@
 #define TRAIN (0)
 #define VAL (1)
 #define TEST (2)
+#define TRUNC_EPSILON (1.7e-4)

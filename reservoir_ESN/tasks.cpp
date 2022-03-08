@@ -150,3 +150,7 @@ std::vector<std::vector<int>> tasks::generate_d_vec() {
 	d.resize(3); generate_d_sequence(d_vec, d, 7);
 	return d_vec;
 }
+
+double tasks::calc_L() {
+
+}

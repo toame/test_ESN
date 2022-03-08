@@ -15,17 +15,18 @@
 #include <map>
 #include <algorithm>
 #include <cmath>
+#include "reservoir_perf.h"
 #include "reservoir_layer.h"
 #include "output_learning.h"
 #include "task.h"
 #include "tasks.h"
+
 #define PHASE_NUM (3)
 #define TRAIN (0)
 #define VAL (1)
 #define TEST (2)
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (1000)
-#define TRUNC_EPSILON (1.7e-4)
 #define THREAD_NUM (16)
 #define SUBSET_SIZE (THREAD_NUM * 1)
 
@@ -108,7 +109,7 @@ int main(void) {
 
 		std::ofstream outputfile("output_data/" + task_name + "_" + std::to_string(param1[r]) + "_" + to_string_with_precision(param2[r], 1) + "_" + std::to_string(unit_size) + "_" + toporogy_type + ".csv");
 		// 入力信号 教師信号の生成
-		
+
 		tasks reservoir_task[PHASE_NUM] = { tasks(step, 0), tasks(step, 1), tasks(step, 2) };
 		for (int phase = 0; phase < PHASE_NUM; phase++) {
 			reservoir_task[phase].generate_random_input(-1.0, 1.0);
@@ -140,7 +141,7 @@ int main(void) {
 			if (reservoir_subset.size() < SUBSET_SIZE && re + 1 < reservoir_set.size()) {
 				continue;
 			}
-			
+
 			std::vector<std::vector<double>> opt_nmse(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size(), 2));
 			std::vector < std::vector<double>> opt_lm2(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size()));
 			std::vector < std::vector <std::vector<double>>> opt_w(SUBSET_SIZE, std::vector <std::vector<double>>(reservoir_task[TRAIN].output_tasks.size()));
@@ -226,12 +227,8 @@ int main(void) {
 					}
 				}
 			}
-
-			std::vector<double> L(reservoir_subset.size());
-			std::vector<double> NL(reservoir_subset.size());
-			std::vector<double> NL_old(reservoir_subset.size());
+			std::vector<reservoir_perf> perf(reservoir_subset.size());
 			std::vector<double> NL1_old(reservoir_subset.size());
-			std::vector<double> L_cut(reservoir_subset.size());
 			std::vector<double> NL_old_cut1(reservoir_subset.size());
 			std::vector<double> NL_old_cut2(reservoir_subset.size());
 			std::vector <std::map<int, double>> sub_NL_old(reservoir_subset.size());
@@ -240,7 +237,6 @@ int main(void) {
 			std::vector<std::map<int, double>> sub_NL_old2(reservoir_subset.size());
 			std::vector<std::vector<double>> narma_task(reservoir_subset.size());
 			std::vector<std::vector<double>> approx_task(reservoir_subset.size());
-			std::vector<int> maxL(reservoir_subset.size());
 			std::cerr << "calc_L, calc_NL..." << std::endl;
 #pragma omp parallel for  private(i) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
@@ -252,43 +248,18 @@ int main(void) {
 					else if (reservoir_task[TEST].output_tasks[i].task_label == "L") {
 						int tau = stoi(reservoir_task[TEST].output_tasks[i].task_name.substr(2));
 						const double tmp_L = 1.0 - test_nmse;
-						if (tmp_L >= TRUNC_EPSILON) {
-							L[k] += tmp_L;
-							L_cut[k] += tmp_L * tmp_L;
-						}
-						if (tmp_L >= 0.9) {
-							maxL[k] = std::max(tau, maxL[k]);
-						}
+						perf[k].calc_L(test_nmse, reservoir_task[TEST].output_tasks[i].task_name);
 						sub_L[k].push_back(std::max(0.0, tmp_L));
 					}
 					else if (reservoir_task[TEST].output_tasks[i].task_label == "NL2") {
 						const double tmp_NL = (1.0 - test_nmse);
-						if (tmp_NL >= TRUNC_EPSILON) NL[k] += tmp_NL;
+						if (tmp_NL >= TRUNC_EPSILON) perf[k].NL += tmp_NL;
 						sub_NL[k].push_back(std::max(0.0, tmp_NL));
 					}
 					else if (reservoir_task[TEST].output_tasks[i].task_label == "NL") {
 						int idx = stoi(reservoir_task[TEST].output_tasks[i].task_name.substr(3));
-						int d_sum = 0;
 						std::vector<int> d = d_vec[TEST][idx];
-						int last = 0;
-						for (int r = 0; r < d.size(); r++) {
-							d_sum += d[r];
-							if (d[r] > 0) last = r;
-						}
-						const double tmp_NL = d_sum * (1.0 - test_nmse);
-						const double tmp_NL1 = (1.0 - test_nmse);
-						sub_NL_old2[k][idx] = tmp_NL1;
-						if (tmp_NL >= TRUNC_EPSILON) {
-							NL1_old[k] += tmp_NL1;
-							NL_old[k] += tmp_NL;
-							sub_NL_old[k][d_sum] += tmp_NL1 * tmp_NL1 * d_sum;
-							NL_old_cut1[k] += tmp_NL1 * tmp_NL1 * d_sum;
-							if (last <= maxL[k]) {
-								NL_old_cut2[k] += tmp_NL;
-							}
-						}
-
-						
+						perf[k].calc_NL(d, test_nmse, reservoir_task[TEST].output_tasks[i].task_name);
 					}
 					else {
 						std::cerr << "error" << std::endl;
@@ -307,7 +278,7 @@ int main(void) {
 				const double p = reservoir_subset[k].p;
 				std::string function_name = reservoir_subset[k].nonlinear_name;
 				outputfile << toporogy_type << "," << function_name << "," << seed << "," << unit_size << "," << p << "," << input_signal_factor << "," << bias_factor1 << "," << weight_factor;
-				outputfile << "," << L[k] << "," << L_cut[k] << "," << NL[k] << "," << NL_old[k] << "," << NL1_old[k] << "," << NL_old_cut1[k] << "," << NL_old_cut2[k];
+				outputfile << "," << perf[k].L << "," << perf[k].L_cut << "," << perf[k].NL << "," << perf[k].NL_old << "," << perf[k].NL1_old << "," << perf[k].NL_old_cut1 << "," << perf[k].NL_old_cut2;
 
 				for (int i = 2; i < 8; i++) outputfile << "," << sub_NL_old[k][i];
 				for (int i = 0; i < std::min<int>(51 - 2, sub_NL[k].size()); i++) outputfile << "," << sub_NL[k][i];
