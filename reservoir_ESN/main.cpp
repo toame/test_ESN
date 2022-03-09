@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include "reservoir_perf.h"
-#include "reservoir_layer.h"
+//#include "reservoir_layer.h"
 #include "output_learning.h"
 #include "task.h"
 #include "tasks.h"
@@ -229,65 +229,24 @@ int main(void) {
 				}
 			}
 			std::vector<reservoir_perf> perf(reservoir_subset.size());
-			std::vector<double> NL1_old(reservoir_subset.size());
-			std::vector<double> NL_old_cut1(reservoir_subset.size());
-			std::vector<double> NL_old_cut2(reservoir_subset.size());
-			std::vector <std::map<int, double>> sub_NL_old(reservoir_subset.size());
-			std::vector<std::vector<double>> sub_L(reservoir_subset.size());
-			std::vector<std::vector<double>> sub_NL(reservoir_subset.size());
-			std::vector<std::map<int, double>> sub_NL_old2(reservoir_subset.size());
-			std::vector<std::vector<double>> narma_task(reservoir_subset.size());
-			std::vector<std::vector<double>> approx_task(reservoir_subset.size());
 			std::cerr << "calc_L, calc_NL..." << std::endl;
 #pragma omp parallel for  private(i) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
-				std::cerr << k << ",";
-				for (i = 0; i < reservoir_task[TEST].output_tasks.size(); i++) {
-					const double test_nmse = calc_nmse(reservoir_task[TEST].output_tasks[i].output_signal, opt_w[k][i], output_node[k][TEST], unit_size, wash_out, step, false);
-					if (reservoir_task[TEST].output_tasks[i].task_label == "narma") narma_task[k].push_back(test_nmse);
-					else if (reservoir_task[TEST].output_tasks[i].task_label == "approx") approx_task[k].push_back(test_nmse);
-					else if (reservoir_task[TEST].output_tasks[i].task_label == "L") {
-						int tau = stoi(reservoir_task[TEST].output_tasks[i].task_name.substr(2));
-						const double tmp_L = 1.0 - test_nmse;
-						perf[k].calc_L(test_nmse, reservoir_task[TEST].output_tasks[i].task_name);
-						sub_L[k].push_back(std::max(0.0, tmp_L));
-					}
-					else if (reservoir_task[TEST].output_tasks[i].task_label == "NL2") {
-						const double tmp_NL = (1.0 - test_nmse);
-						if (tmp_NL >= TRUNC_EPSILON) perf[k].NL += tmp_NL;
-						sub_NL[k].push_back(std::max(0.0, tmp_NL));
-					}
-					else if (reservoir_task[TEST].output_tasks[i].task_label == "NL") {
-						int idx = stoi(reservoir_task[TEST].output_tasks[i].task_name.substr(3));
-						std::vector<int> d = d_vec[TEST][idx];
-						perf[k].calc_NL(d, test_nmse, reservoir_task[TEST].output_tasks[i].task_name);
-					}
-					else {
-						std::cerr << "error" << std::endl;
-					}
-				}
 
+				std::cerr << k << ",";
+				perf[k].reservoir = reservoir_subset[k];
+				perf[k]._tasks = reservoir_task[TEST];
+				for (i = 0; i < reservoir_task[TEST].output_tasks.size(); i++) {
+					
+					
+					const double test_nmse = calc_nmse(reservoir_task[TEST].output_tasks[i].output_signal, opt_w[k][i], output_node[k][TEST], unit_size, wash_out, step, false);
+					perf[k].add_task(test_nmse, reservoir_task[TEST].output_tasks[i]);
+				}
 			}
 			std::cerr << "output..." << std::endl;
 			// ファイル出力
 			for (int k = 0; k < reservoir_subset.size(); k++) {
-				const double input_signal_factor = reservoir_subset[k].input_signal_factor;
-				const double weight_factor = reservoir_subset[k].weight_factor;
-				const int seed = reservoir_subset[k].seed;
-				double bias_factor1 = reservoir_subset[k].bias_factor;
-				if (bias_factor1 < 0) bias_factor1 = input_signal_factor * weight_factor;
-				const double p = reservoir_subset[k].p;
-				std::string function_name = reservoir_subset[k].nonlinear_name;
-				outputfile << toporogy_type << "," << function_name << "," << seed << "," << unit_size << "," << p << "," << input_signal_factor << "," << bias_factor1 << "," << weight_factor;
-				outputfile << "," << perf[k].L << "," << perf[k].L_cut << "," << perf[k].NL << "," << perf[k].NL_old << "," << perf[k].NL1_old << "," << perf[k].NL_old_cut1 << "," << perf[k].NL_old_cut2;
-
-				for (int i = 2; i < 8; i++) outputfile << "," << perf[k].sub_NL_old[i];
-				//for (int i = 0; i < std::min<int>(51 - 2, perf[k].sub_NL.size()); i++) outputfile << "," << sub_NL[k][i];
-				for (int i = 0; i < std::min<int>(100, perf[k].sub_L.size()); i++) outputfile << "," << perf[k].sub_L[i];
-				for (int i = 0; i < perf[k].sub_NL_old2.size(); i++) outputfile << "," << perf[k].sub_NL_old2[i];
-				for (int i = 0; i < narma_task[k].size(); i++) outputfile << "," << narma_task[k][i];
-				for (int i = 0; i < approx_task[k].size(); i++)	outputfile << "," << approx_task[k][i];
-				outputfile << std::endl;
+				perf[k].reservoir_perf_output(outputfile);
 			}
 			reservoir_subset.clear();
 			end = std::chrono::system_clock::now();  // 計測終了時間

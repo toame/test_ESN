@@ -14,10 +14,17 @@ std::string to_string_with_precision(const T a_value, const int n = 6)
 	out << std::fixed << a_value;
 	return out.str();
 }
+tasks::tasks() {
+	seed = 0;
+	step = 4000;
+	input_signal.resize(step);
+	d_vec.resize(PHASE_NUM);
+}
 tasks::tasks(int step, int seed) {
 	this->step = step;
 	this->seed = seed;
 	input_signal.resize(step);
+	d_vec.resize(PHASE_NUM);
 }
 
 // [u_min, u_max]‚Ì”ÍˆÍ‚Åˆê—l—”‚ğ¶¬‚·‚é
@@ -108,7 +115,7 @@ void tasks::generate_L_task(int max_L) {
 }
 
 void tasks::generate_NL_task() {
-	std::vector<std::vector<int>> d_vec = tasks::generate_d_vec();
+	tasks::generate_d_vec();
 	for (int i = 0; i < d_vec.size(); i++) {
 		output_task task;
 		task.task_label = "NL";
@@ -139,8 +146,7 @@ void tasks::generate_d_sequence(std::vector<std::vector<int>>& d_vec, std::vecto
 	if (depth + 1 < d.size()) generate_d_sequence(d_vec, d, d_sum_remain, depth + 1);
 }
 
-std::vector<std::vector<int>> tasks::generate_d_vec() {
-	std::vector<std::vector<int>> d_vec;
+void tasks::generate_d_vec() {
 	std::vector<int> d;
 	d.resize(12); generate_d_sequence(d_vec, d, 2);
 	d.resize(8); generate_d_sequence(d_vec, d, 3);
@@ -148,9 +154,4 @@ std::vector<std::vector<int>> tasks::generate_d_vec() {
 	d.resize(4); generate_d_sequence(d_vec, d, 5);
 	d.resize(3); generate_d_sequence(d_vec, d, 6);
 	d.resize(3); generate_d_sequence(d_vec, d, 7);
-	return d_vec;
-}
-
-double tasks::calc_L() {
-
 }
