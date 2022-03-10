@@ -9,6 +9,7 @@ using uniform_real_dist_type = std::uniform_real_distribution<>;
 class output_task {
 public:
 	std::vector<double> output_signal;
+	double nmse;
 	std::string task_name;
 	std::string task_label;
 };

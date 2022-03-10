@@ -42,23 +42,25 @@ public:
 		maxL = 0;
 		sub_NL_old.resize(10);
 	}
-	void add_task(double nmse, output_task task) {
-		//std::cerr << nmse << "," << task.task_name << std::endl;
-		if (task.task_label == "narma") narma_task.push_back(nmse);
-		else if (task.task_label == "approx") approx_task.push_back(nmse);
-		else if (task.task_label == "L") {
-			calc_L(nmse, task.task_name);
-		}
-		else if (task.task_label == "NL2") {
-			const double tmp_NL = (1.0 - nmse);
-		}
-		else if (task.task_label == "NL") {
-			int idx = stoi(task.task_name.substr(3));
-			std::vector<int> d = _tasks.d_vec[idx];
-			calc_NL(d, nmse, task.task_name);
-		}
-		else {
-			std::cerr << "error" << std::endl;
+	void add_task(tasks _tasks) {
+		for (int i = 0; i < _tasks.output_tasks.size(); i++) {
+			const output_task& task = _tasks.output_tasks[i];
+			if (task.task_label == "narma") narma_task.push_back(task.nmse);
+			else if (task.task_label == "approx") approx_task.push_back(task.nmse);
+			else if (task.task_label == "L") {
+				calc_L(task.nmse, task.task_name);
+			}
+			else if (task.task_label == "NL2") {
+				const double tmp_NL = (1.0 - task.nmse);
+			}
+			else if (task.task_label == "NL") {
+				int idx = stoi(task.task_name.substr(3));
+				std::vector<int> d = _tasks.d_vec[idx];
+				calc_NL(d, task.nmse, task.task_name);
+			}
+			else {
+				std::cerr << "error" << std::endl;
+			}
 		}
 	}
 	void calc_L(double nmse, std::string task_name) {

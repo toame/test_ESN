@@ -51,20 +51,11 @@ int main(void) {
 	std::vector<std::string> toporogy = { "random", "ring" };
 	std::vector<std::string> task_names = { "NL", "NL" };
 	if (unit_sizes.size() != task_names.size()) return 0;
-	std::vector<int> param1 = { 0, 0 };
-	std::vector<double> param2 = { 0, 0 };
-	if (param1.size() != param2.size()) return 0;
-
 
 	std::vector<double> p_set{ 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 0.95, 1.0, 0.0 };
 	std::vector<double> bias_set{ 0, 1, 2, 3, 5, 8 };
 	std::vector<double> alpha_set{ 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0 };
 	std::vector<double> sigma_set{ 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2 };
-
-	//std::vector<double> p_set{ 0.0, 0.5, 1.0 };
-	//std::vector<double> bias_set{ 0, 1, 2, 5};
-	//std::vector<double> alpha_set{ 0.01, 0.03, 0.1, 0.3, 0.6, 1.0, 3.0, 6.0, 10.0 };
-	//std::vector<double> sigma_set{ 0.1, 0.25, 0.4, 0.6, 0.8, 0.9, 1.0};
 
 	const int alpha_step = alpha_set.size();
 	const int sigma_step = sigma_set.size();
@@ -107,9 +98,9 @@ int main(void) {
 		double alpha_min, d_alpha;
 		double sigma_min, d_sigma;
 
-		std::ofstream outputfile("output_data/" + task_name + "_" + std::to_string(param1[r]) + "_" + to_string_with_precision(param2[r], 1) + "_" + std::to_string(unit_size) + "_" + toporogy_type + ".csv");
+		std::ofstream outputfile("output_data/" + task_name + std::to_string(unit_size) + "_" + toporogy_type + ".csv");
+		
 		// 入力信号 教師信号の生成
-
 		tasks reservoir_task[PHASE_NUM] = { tasks(step, 0), tasks(step, 1), tasks(step, 2) };
 		for (int phase = 0; phase < PHASE_NUM; phase++) {
 			reservoir_task[phase].generate_random_input(-1.0, 1.0);
@@ -117,15 +108,11 @@ int main(void) {
 			reservoir_task[phase].generate_NL_task();
 			reservoir_task[phase].generate_approx_task(approx_tau_set, approx_nu_set);
 			reservoir_task[phase].generate_narma_task(narma_tau_set);
-			
 		}
 
 		// 設定出力
 		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,L_cut,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
 		for (int i = 2; i <= 7; i++) outputfile << ",NL_old_" << std::to_string(i);
-		//for (int i = 2; i <= 50; i++) outputfile << ",NL" << std::to_string(i);
-		//for (int i = 1; i <= std::min(unit_size, 100); i++) outputfile << ",L" << std::to_string(i);
-		//for (int i = 0; i < d_vec[TRAIN].size(); i++) outputfile << ",NL_" << std::to_string(i);
 		for (int i = 0; i < reservoir_task[TRAIN].output_tasks.size(); i++) {
 			outputfile << "," << reservoir_task[TRAIN].output_tasks[i].task_name;
 		}
@@ -229,22 +216,25 @@ int main(void) {
 				}
 			}
 			std::vector<reservoir_perf> perf(reservoir_subset.size());
-			std::cerr << "calc_L, calc_NL..." << std::endl;
+			std::cerr << "calc test_data nmse..." << std::endl;
 #pragma omp parallel for  private(i) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
-
 				std::cerr << k << ",";
 				perf[k].reservoir = reservoir_subset[k];
 				perf[k]._tasks = reservoir_task[TEST];
+
+				// テストデータでnmseを計算する。
 				for (i = 0; i < reservoir_task[TEST].output_tasks.size(); i++) {
-					
-					
 					const double test_nmse = calc_nmse(reservoir_task[TEST].output_tasks[i].output_signal, opt_w[k][i], output_node[k][TEST], unit_size, wash_out, step, false);
-					perf[k].add_task(test_nmse, reservoir_task[TEST].output_tasks[i]);
+					reservoir_task[TEST].output_tasks[i].nmse = test_nmse;
 				}
+
+				// タスクを追加する。
+				perf[k].add_task(reservoir_task[TEST]);
 			}
+
+			// ファイルを出力する。
 			std::cerr << "output..." << std::endl;
-			// ファイル出力
 			for (int k = 0; k < reservoir_subset.size(); k++) {
 				perf[k].reservoir_perf_output(outputfile);
 			}
