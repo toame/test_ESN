@@ -63,6 +63,7 @@ public:
 			}
 		}
 	}
+
 	void calc_L(double nmse, std::string task_name) {
 		int tau = stoi(task_name.substr(2));
 		double tmp_L = 1.0 - nmse;

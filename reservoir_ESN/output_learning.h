@@ -4,6 +4,7 @@ class output_learning {
 public:
     std::vector<std::vector<std::vector<double>>> w;
     std::vector<std::vector<double>> A, L, nmse;
+    std::vector<std::vector<std::vector<double>>> A_tilda;
     std::vector<double> d, b;
     output_learning();
 
@@ -16,11 +17,14 @@ public:
     //連立一次方程式Aw=bのbを生成
     void generate_simultaneous_linear_equationsb_fast(const std::vector<double>& output_node, const std::vector<double>& yt_s, const int wash_out, const int step, const int n_size);
 
+    // A_tildaを生成する
+    void generate_simultaneous_linear_equationsA_tilda(int lambda_step, int _min, int add);
+    
     // 連立一次方程式Aw = b をwについてICCGで解く
     // void Learning(std::vector<double>& w, const std::vector<std::vector<double>>& A, const std::vector<double>& b, const double lambda, const int n_size);
 
     // 不完全コレスキー分解
-    int IncompleteCholeskyDecomp2(int n);
+    int IncompleteCholeskyDecomp2(int lm, int n);
     
 
     // p_0 = (LDL^T)^-1 r_0 の計算
@@ -39,7 +43,7 @@ public:
      * @param[inout] eps 許容誤差(反復終了後,実際の誤差を返す)
      * @return 1:成功,0:失敗
      */
-    int ICCGSolver(std::vector<double>& w, int n, int& max_iter, double& eps);
+    int ICCGSolver(int lm, std::vector<double>& w, int n, int& max_iter, double& eps);
 
     /*!
      * 共役勾配法によりA・x=bを解く
@@ -51,7 +55,7 @@ public:
      * @param[inout] eps 許容誤差(反復終了後,実際の誤差を返す)
      * @return 1:成功,0:失敗
      */
-    int CGSolver(const std::vector<std::vector<double>>& A, const std::vector<double>& b, std::vector<double>& x, int n, int& max_iter, double& eps);
+    int CGSolver(int lm, const std::vector<std::vector<double>>& A, const std::vector<double>& b, std::vector<double>& x, int n, int& max_iter, double& eps);
 };
 
 inline double output_learning::dot(const std::vector<double> r1, const std::vector<double> r2, const int size) {

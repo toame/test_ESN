@@ -63,6 +63,17 @@ void output_learning::generate_simultaneous_linear_equationsb_fast(const std::ve
 	cblas_dgemv(CblasRowMajor, CblasNoTrans, b.size(), step - wash_out - 1, alpha, output_node.data(), step - wash_out - 1, yt_s.data() + wash_out + 1, 1, beta, b.data(), 1);
 }
 
+void output_learning::generate_simultaneous_linear_equationsA_tilda(int lambda_step, int _min, int add) {
+	A_tilda.resize(lambda_step);
+	for (int lm = 0; lm < lambda_step; lm++) {
+		A_tilda[lm] = A;
+		for (int i = 0; i < A.size(); i++) {
+			A_tilda[lm][i][i] = A[i][i] + pow(10, _min + lm * add);
+		}
+	}
+
+}
+
 // 連立一次方程式Aw = b をwについてICCGで解く
 // void Learning(std::vector<double>& w, const std::vector<std::vector<double>>& A, const std::vector<double>& b, const double lambda,
 //               const int n_size) {
@@ -78,18 +89,18 @@ void output_learning::generate_simultaneous_linear_equationsb_fast(const std::ve
 // }
 
 // 不完全コレスキー分解
-int output_learning::IncompleteCholeskyDecomp2(int n) {
+int output_learning::IncompleteCholeskyDecomp2(int lm, int n) {
 	if (n <= 0) return 0;
 	L.resize(n, std::vector<double>(n));
 	d.resize(n);
-	L[0][0] = A[0][0];
+	L[0][0] = A_tilda[lm][0][0];
 	d[0] = 1.0 / L[0][0];
 
 	for (int i = 1; i < n; ++i) {
 		for (int j = 0; j <= i; ++j) {
-			if (fabs(A[i][j]) < 1.0e-10) continue;
+			if (fabs(A_tilda[lm][i][j]) < 1.0e-10) continue;
 
-			double lld = A[i][j];
+			double lld = A_tilda[lm][i][j];
 			for (int k = 0; k < j; ++k) {
 				lld -= L[i][k] * L[j][k] * d[k];
 			}
@@ -114,7 +125,7 @@ int output_learning::IncompleteCholeskyDecomp2(int n) {
  * @param[inout] eps 許容誤差(反復終了後,実際の誤差を返す)
  * @return 1:成功,0:失敗
  */
-int output_learning::ICCGSolver(std::vector<double>& w, int n, int& max_iter, double& eps) {
+int output_learning::ICCGSolver(int lm, std::vector<double>& w, int n, int& max_iter, double& eps) {
 	if (n <= 0) return 0;
 
 	std::vector<double> r(n), p(n), y(n), r2(n);
@@ -124,7 +135,7 @@ int output_learning::ICCGSolver(std::vector<double>& w, int n, int& max_iter, do
 	for (int i = 0; i < n; ++i) {
 		double ax = 0.0;
 		for (int j = 0; j < n; ++j) {
-			ax += A[i][j] * w[j];
+			ax += A_tilda[lm][i][j] * w[j];
 		}
 		r[i] = b[i] - ax;
 	}
@@ -140,13 +151,13 @@ int output_learning::ICCGSolver(std::vector<double>& w, int n, int& max_iter, do
 	std::vector<double> B(n * n);
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < n; j++) {
-			B[i * n + j] = A[i][j];
+			B[i * n + j] = A_tilda[lm][i][j];
 		}
 	}
 	for (k = 0; k < max_iter; ++k) {
 		// y = AP の計算
 		//for (int i = 0; i < n; ++i) {
-		//	y[i] = dot(A[i], p, n);
+		//	y[i] = dot(A_tilda[lm][i], p, n);
 		//}
 		cblas_dgemv(CblasRowMajor, CblasNoTrans, n, n, 1.0, B.data(), n, p.data(), 1, 0.0, y.data(), 1);
 
@@ -196,7 +207,7 @@ int output_learning::ICCGSolver(std::vector<double>& w, int n, int& max_iter, do
  * @param[inout] eps 許容誤差(反復終了後,実際の誤差を返す)
  * @return 1:成功,0:失敗
  */
-int output_learning::CGSolver(const std::vector<std::vector<double>>& A, const std::vector<double>& b, std::vector<double>& x, int n, int& max_iter, double& eps) {
+int output_learning::CGSolver(int lm, const std::vector<std::vector<double>>& A, const std::vector<double>& b, std::vector<double>& x, int n, int& max_iter, double& eps) {
 	if (n <= 0) return 0;
 
 	std::vector<double> r(n), p(n), y(n);
@@ -206,7 +217,7 @@ int output_learning::CGSolver(const std::vector<std::vector<double>>& A, const s
 	for (int i = 0; i < n; ++i) {
 		double ax = 0.0;
 		for (int j = 0; j < n; ++j) {
-			ax += A[i][j] * x[j];
+			ax += A_tilda[lm][i][j] * x[j];
 		}
 		r[i] = b[i] - ax;
 		p[i] = r[i];
@@ -220,7 +231,7 @@ int output_learning::CGSolver(const std::vector<std::vector<double>>& A, const s
 	for (k = 0; k < max_iter; ++k) {
 		// y = AP の計算
 		for (int i = 0; i < n; ++i) {
-			y[i] = dot(A[i], p, n);
+			y[i] = dot(A_tilda[lm][i], p, n);
 		}
 
 		// alpha = r*r/(P*AP)の計算

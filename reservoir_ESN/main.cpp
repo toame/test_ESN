@@ -47,7 +47,7 @@ int main(void) {
 	const int TRIAL_NUM = 2;	// ループ回数
 	const int step = 4000;
 	const int wash_out = 400;
-	std::vector<int> unit_sizes = { 50, 50 };
+	std::vector<int> unit_sizes = { 110, 110 };
 	std::vector<std::string> toporogy = { "random", "ring" };
 	std::vector<std::string> task_names = { "NL", "NL" };
 	if (unit_sizes.size() != task_names.size()) return 0;
@@ -123,18 +123,17 @@ int main(void) {
 		std::vector<reservoir_layer> reservoir_subset;
 		std::chrono::system_clock::time_point  start, end; // 型は auto で可
 		start = std::chrono::system_clock::now(); // 計測開始時間
-	   // 処理
+		
+		// リザーバ集合を処理する
 		for (int re = 0; re < reservoir_set.size(); re++) {
+
+			// 高速化のため、まとめて(=SUBSET_SIZEごとに)リザーバを処理するようにする。
 			reservoir_subset.push_back(reservoir_set[re]);
 			if (reservoir_subset.size() < SUBSET_SIZE && re + 1 < reservoir_set.size()) {
 				continue;
 			}
 
-			std::vector<std::vector<double>> opt_nmse(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size(), 2));
-			std::vector < std::vector<double>> opt_lm2(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size()));
-			std::vector < std::vector <std::vector<double>>> opt_w(SUBSET_SIZE, std::vector <std::vector<double>>(reservoir_task[TRAIN].output_tasks.size()));
-
-			// 複数のリザーバーの時間発展をまとめて処理
+			/*** 入力による時間発展 ***/
 			std::cerr << "reservoir_update..." << std::endl;
 #pragma omp parallel for num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
@@ -153,7 +152,6 @@ int main(void) {
 					reservoir_subset_tmp.push_back(reservoir_subset[k]);
 				}
 			}
-			std::cerr << reservoir_subset.size() << "," << reservoir_subset_tmp.size() << std::endl;
 			reservoir_subset = reservoir_subset_tmp;
 			int lm;
 
@@ -162,11 +160,16 @@ int main(void) {
 			std::vector<output_learning> output_learning(reservoir_subset.size());
 			std::vector<std::vector<double>> A(reservoir_subset.size());
 			std::vector<std::vector<double>> output_node_T(reservoir_subset.size());
+
+			std::vector<std::vector<double>> opt_nmse(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size(), 2));
+			std::vector < std::vector<double>> opt_lm2(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size()));
+			std::vector < std::vector <std::vector<double>>> opt_w(SUBSET_SIZE, std::vector <std::vector<double>>(reservoir_task[TRAIN].output_tasks.size()));
 			std::cerr << "reservoir_training..." << std::endl;
 #pragma omp parallel for num_threads(THREAD_NUM)
 			// 重みの学習を行う
 			for (int k = 0; k < reservoir_subset.size(); k++) {
 				output_learning[k].generate_simultaneous_linear_equationsA(output_node[k][TRAIN], wash_out, step, unit_size);
+				output_learning[k].generate_simultaneous_linear_equationsA_tilda(lambda_step, LAMBDA_MIN, LAMBDA_ADD);
 			}
 #pragma omp parallel for private(i) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
@@ -188,15 +191,12 @@ int main(void) {
 				for (lm = 0; lm < lambda_step; lm++) {
 					output_learning[k].w.resize(reservoir_task[TRAIN].output_tasks.size(), std::vector<std::vector<double>>(lambda_step));
 					output_learning[k].nmse.resize(reservoir_task[TRAIN].output_tasks.size(), std::vector<double>(lambda_step));
-					for (j = 0; j <= unit_size; j++) {
-						output_learning[k].A[j][j] = A[k][j] + pow(10, -14 + lm * 2);
-					}
-					output_learning[k].IncompleteCholeskyDecomp2(unit_size + 1);
+					output_learning[k].IncompleteCholeskyDecomp2(lm, unit_size + 1);
 					for (i = 0; i < reservoir_task[TRAIN].output_tasks.size(); i++) {
 						output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T[k], reservoir_task[TRAIN].output_tasks[i].output_signal, wash_out, step, unit_size);
 						double eps = 1e-12;
 						int itr = 10;
-						output_learning[k].ICCGSolver(output_learning[k].w[i][lm], unit_size + 1, itr, eps);
+						output_learning[k].ICCGSolver(lm, output_learning[k].w[i][lm], unit_size + 1, itr, eps);
 						output_learning[k].nmse[i][lm] = calc_nmse(reservoir_task[VAL].output_tasks[i].output_signal, output_learning[k].w[i][lm], output_node[k][VAL], unit_size, wash_out, step, false);
 					}
 				}
@@ -215,15 +215,18 @@ int main(void) {
 					}
 				}
 			}
+
+			/***  test_data による結果　***/
+
 			std::vector<reservoir_perf> perf(reservoir_subset.size());
 			std::cerr << "calc test_data nmse..." << std::endl;
-#pragma omp parallel for  private(i) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
 				std::cerr << k << ",";
 				perf[k].reservoir = reservoir_subset[k];
 				perf[k]._tasks = reservoir_task[TEST];
 
 				// テストデータでnmseを計算する。
+#pragma omp parallel for  private(i) num_threads(THREAD_NUM)
 				for (i = 0; i < reservoir_task[TEST].output_tasks.size(); i++) {
 					const double test_nmse = calc_nmse(reservoir_task[TEST].output_tasks[i].output_signal, opt_w[k][i], output_node[k][TEST], unit_size, wash_out, step, false);
 					reservoir_task[TEST].output_tasks[i].nmse = test_nmse;
@@ -232,13 +235,19 @@ int main(void) {
 				// タスクを追加する。
 				perf[k].add_task(reservoir_task[TEST]);
 			}
+			std::cerr << "finished" << std::endl;
 
-			// ファイルを出力する。
+
+			/***  結果をファイルに出力　***/
+
 			std::cerr << "output..." << std::endl;
 			for (int k = 0; k < reservoir_subset.size(); k++) {
 				perf[k].reservoir_perf_output(outputfile);
 			}
 			reservoir_subset.clear();
+
+
+			// 進捗出力
 			end = std::chrono::system_clock::now();  // 計測終了時間
 			double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(); //処理に要した時間をミリ秒に変換
 			std::cerr << (re + 1) << "/" << reservoir_set.size() << " remain est." << (elapsed / 1000.0) / (re + 1) * (reservoir_set.size() - (re + 1)) / 3600.0 << "[hours]" << std::endl;

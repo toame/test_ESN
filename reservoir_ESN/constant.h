@@ -4,3 +4,6 @@
 #define VAL (1)
 #define TEST (2)
 #define TRUNC_EPSILON (1.7e-4)
+#define LAMBDA_STEP (4)
+#define LAMBDA_MIN (-14)
+#define LAMBDA_ADD (2)
