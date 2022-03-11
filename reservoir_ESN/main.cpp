@@ -63,7 +63,6 @@ int main(void) {
 	std::string task_name;
 	std::string function_name;
 
-
 	std::vector<double> approx_nu_set({ -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 });
 	std::vector<double> approx_tau_set({ -2, 0, 1, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0 });
 	std::vector<int> narma_tau_set({ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
@@ -153,12 +152,9 @@ int main(void) {
 				}
 			}
 			reservoir_subset = reservoir_subset_tmp;
-			int lm;
-
 			int opt_k = 0;
-			int i, t, j;
+			int i, t, j, lm;
 			std::vector<output_learning> output_learning(reservoir_subset.size());
-			std::vector<std::vector<double>> A(reservoir_subset.size());
 			std::vector<std::vector<double>> output_node_T(reservoir_subset.size());
 
 			std::vector<std::vector<double>> opt_nmse(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size(), 2));
@@ -171,13 +167,6 @@ int main(void) {
 				output_learning[k].generate_simultaneous_linear_equationsA(output_node[k][TRAIN], wash_out, step, unit_size);
 				output_learning[k].generate_simultaneous_linear_equationsA_tilda(lambda_step, LAMBDA_MIN, LAMBDA_ADD);
 			}
-#pragma omp parallel for private(i) num_threads(THREAD_NUM)
-			for (int k = 0; k < reservoir_subset.size(); k++) {
-				A[k].resize(unit_size + 1);
-				for (i = 0; i <= unit_size; i++) {
-					A[k][i] = output_learning[k].A[i][i];
-				}
-			}
 #pragma omp parallel for  private(lm, i, t, j) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
 				for (i = 0; i <= unit_size; i++) {
@@ -188,9 +177,9 @@ int main(void) {
 			}
 #pragma omp parallel for  private(lm, i, t, j) num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
+				output_learning[k].w.resize(reservoir_task[TRAIN].output_tasks.size(), std::vector<std::vector<double>>(lambda_step));
+				output_learning[k].nmse.resize(reservoir_task[TRAIN].output_tasks.size(), std::vector<double>(lambda_step));
 				for (lm = 0; lm < lambda_step; lm++) {
-					output_learning[k].w.resize(reservoir_task[TRAIN].output_tasks.size(), std::vector<std::vector<double>>(lambda_step));
-					output_learning[k].nmse.resize(reservoir_task[TRAIN].output_tasks.size(), std::vector<double>(lambda_step));
 					output_learning[k].IncompleteCholeskyDecomp2(lm, unit_size + 1);
 					for (i = 0; i < reservoir_task[TRAIN].output_tasks.size(); i++) {
 						output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T[k], reservoir_task[TRAIN].output_tasks[i].output_signal, wash_out, step, unit_size);
