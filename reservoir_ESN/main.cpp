@@ -98,7 +98,7 @@ int main(void) {
 		double sigma_min, d_sigma;
 
 		std::ofstream outputfile("output_data/" + task_name + std::to_string(unit_size) + "_" + toporogy_type + ".csv");
-		
+
 		// 入力信号 教師信号の生成
 		tasks reservoir_task[PHASE_NUM] = { tasks(step, 0), tasks(step, 1), tasks(step, 2) };
 		for (int phase = 0; phase < PHASE_NUM; phase++) {
@@ -122,7 +122,7 @@ int main(void) {
 		std::vector<reservoir_layer> reservoir_subset;
 		std::chrono::system_clock::time_point  start, end; // 型は auto で可
 		start = std::chrono::system_clock::now(); // 計測開始時間
-		
+
 		// リザーバ集合を処理する
 		for (int re = 0; re < reservoir_set.size(); re++) {
 
@@ -181,8 +181,10 @@ int main(void) {
 				output_learning[k].nmse.resize(reservoir_task[TRAIN].output_tasks.size(), std::vector<double>(lambda_step));
 				for (lm = 0; lm < lambda_step; lm++) {
 					output_learning[k].IncompleteCholeskyDecomp2(lm, unit_size + 1);
-					for (i = 0; i < reservoir_task[TRAIN].output_tasks.size(); i++) {
-						output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T[k], reservoir_task[TRAIN].output_tasks[i].output_signal, wash_out, step, unit_size);
+				}
+				for (i = 0; i < reservoir_task[TRAIN].output_tasks.size(); i++) {
+					output_learning[k].generate_simultaneous_linear_equationsb_fast(output_node_T[k], reservoir_task[TRAIN].output_tasks[i].output_signal, wash_out, step, unit_size);
+					for (lm = 0; lm < lambda_step; lm++) {
 						double eps = 1e-12;
 						int itr = 10;
 						output_learning[k].ICCGSolver(lm, output_learning[k].w[i][lm], unit_size + 1, itr, eps);
