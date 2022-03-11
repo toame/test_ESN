@@ -27,6 +27,12 @@
     <ClInclude Include="task.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="reservoir_perf.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="tasks.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="reservoir_layer.cpp">
@@ -39,6 +45,9 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="task.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="tasks.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
