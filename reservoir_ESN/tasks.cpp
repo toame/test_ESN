@@ -1,10 +1,4 @@
-#include <random>
-#include <algorithm>
-#include <cassert>
-#include <iostream>
-#include <sstream>
 #include "tasks.h"
-#include "constant.h"
 
 template <typename T>
 std::string to_string_with_precision(const T a_value, const int n = 6)
@@ -36,9 +30,11 @@ void tasks::generate_random_input(const int u_min, const int u_max) {
 	}
 }
 
-void tasks::generate_approx_task(const std::vector<double>& tau_set, const std::vector<double>& nu_set) {
-	for (auto tau : tau_set) {
-		for (auto nu : nu_set) {
+void tasks::generate_approx_task() {
+	std::vector<double> approx_nu_set({ -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 });
+	std::vector<double> approx_tau_set({ -2, 0, 1, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0 });
+	for (auto tau : approx_tau_set) {
+		for (auto nu : approx_nu_set) {
 			output_task task;
 			int tmp_tau = (int)(pow(2, tau) + 0.5);
 			task.task_name = "approx_" + std::to_string(tmp_tau) + "_" + to_string_with_precision(nu, 1);
@@ -57,8 +53,9 @@ void tasks::generate_approx_task(const std::vector<double>& tau_set, const std::
 	}
 }
 
-void tasks::generate_narma_task(std::vector<int>& tau_set) {
-	for (auto tau : tau_set) {
+void tasks::generate_narma_task() {
+	std::vector<int> narma_tau_set({ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
+	for (auto tau : narma_tau_set) {
 		std::vector<double> input_signal = this->input_signal;
 		output_task task;
 		task.output_signal.resize(step);

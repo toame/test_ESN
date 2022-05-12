@@ -16,10 +16,10 @@
 #include <algorithm>
 #include <cmath>
 #include "reservoir_perf.h"
-//#include "reservoir_layer.h"
 #include "output_learning.h"
 #include "task.h"
 #include "tasks.h"
+#include "output.h"
 
 #define PHASE_NUM (3)
 #define TRAIN (0)
@@ -32,14 +32,6 @@
 
 #include <sstream>
 
-template <typename T>
-std::string to_string_with_precision(const T a_value, const int n = 6)
-{
-	std::ostringstream out;
-	out.precision(n);
-	out << std::fixed << a_value;
-	return out.str();
-}
 
 typedef void (*FUNC)();
 int main(void) {
@@ -47,38 +39,12 @@ int main(void) {
 	const int TRIAL_NUM = 2;	// ループ回数
 	const int step = 4000;
 	const int wash_out = 400;
-	std::vector<int> unit_sizes = { 110, 110 };
+	std::vector<int> unit_sizes = { 100, 100 };
 	std::vector<std::string> toporogy = { "random", "ring" };
 	std::vector<std::string> task_names = { "NL", "NL" };
 	if (unit_sizes.size() != task_names.size()) return 0;
 
-	std::vector<double> p_set{ 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 0.95, 1.0, 0.0 };
-	std::vector<double> bias_set{ 0, 1, 2, 3, 5, 8 };
-	std::vector<double> alpha_set{ 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0 };
-	std::vector<double> sigma_set{ 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2 };
-
-	const int alpha_step = alpha_set.size();
-	const int sigma_step = sigma_set.size();
 	const int lambda_step = 4;
-	std::string task_name;
-	std::string function_name;
-
-	std::vector<double> approx_nu_set({ -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 });
-	std::vector<double> approx_tau_set({ -2, 0, 1, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0 });
-	std::vector<int> narma_tau_set({ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
-
-	std::ofstream output_NL_d("output_data/d_vec.csv");
-
-	std::vector<std::vector<std::vector<int>>> d_vec(PHASE_NUM);
-	generate_d_sequence_set(d_vec);
-	for (auto& d : d_vec[TRAIN]) {
-		for (int i = 0; i < d.size(); i++) {
-			if (i != 0) output_NL_d << ",";
-			output_NL_d << d[i];
-		}
-		output_NL_d << std::endl;
-	}
-	output_NL_d.close();
 
 	for (int r = 0; r < unit_sizes.size(); r++) {
 
@@ -98,30 +64,27 @@ int main(void) {
 		double sigma_min, d_sigma;
 
 		std::ofstream outputfile("output_data/" + task_name + std::to_string(unit_size) + "_" + toporogy_type + ".csv");
-
-		// 入力信号 教師信号の生成
+		
+		// タスク(入力信号 教師信号)の生成
 		tasks reservoir_task[PHASE_NUM] = { tasks(step, 0), tasks(step, 1), tasks(step, 2) };
 		for (int phase = 0; phase < PHASE_NUM; phase++) {
 			reservoir_task[phase].generate_random_input(-1.0, 1.0);
 			reservoir_task[phase].generate_L_task(unit_size);
 			reservoir_task[phase].generate_NL_task();
-			reservoir_task[phase].generate_approx_task(approx_tau_set, approx_nu_set);
-			reservoir_task[phase].generate_narma_task(narma_tau_set);
+			reservoir_task[phase].generate_approx_task();
+			reservoir_task[phase].generate_narma_task();
 		}
 
 		// 設定出力
-		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,L_cut,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
-		for (int i = 2; i <= 7; i++) outputfile << ",NL_old_" << std::to_string(i);
-		for (int i = 0; i < reservoir_task[TRAIN].output_tasks.size(); i++) {
-			outputfile << "," << reservoir_task[TRAIN].output_tasks[i].task_name;
-		}
-		outputfile << std::endl;
+		output_NL_format();
+
 		std::cerr << reservoir_task[TRAIN].output_tasks.size() << std::endl;
-		auto reservoir_set = reservoir_layer::generate_reservoir(p_set, bias_set, alpha_set, sigma_set, unit_size, connection_degree, function_names, 2, wash_out, toporogy_type);
+		auto reservoir_set = reservoir_layer::generate_reservoir(unit_size, connection_degree, function_names, TRIAL_NUM, wash_out, toporogy_type);
 
 		std::vector<reservoir_layer> reservoir_subset;
-		std::chrono::system_clock::time_point  start, end; // 型は auto で可
-		start = std::chrono::system_clock::now(); // 計測開始時間
+
+		std::chrono::system_clock::time_point  start, end;
+		start = std::chrono::system_clock::now();
 
 		// リザーバ集合を処理する
 		for (int re = 0; re < reservoir_set.size(); re++) {
@@ -132,7 +95,7 @@ int main(void) {
 				continue;
 			}
 
-			/*** 入力による時間発展 ***/
+			/*** 入力によるリザーバの時間発展 ***/
 			std::cerr << "reservoir_update..." << std::endl;
 #pragma omp parallel for num_threads(THREAD_NUM)
 			for (int k = 0; k < reservoir_subset.size(); k++) {
@@ -230,7 +193,6 @@ int main(void) {
 
 
 			/***  結果をファイルに出力　***/
-
 			std::cerr << "output..." << std::endl;
 			for (int k = 0; k < reservoir_subset.size(); k++) {
 				perf[k].reservoir_perf_output(outputfile);

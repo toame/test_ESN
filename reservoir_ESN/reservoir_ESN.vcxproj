@@ -147,11 +147,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="constant.h" />
     <ClInclude Include="output_learning.h" />
     <ClInclude Include="reservoir_layer.h" />
     <ClInclude Include="reservoir_perf.h" />
     <ClInclude Include="task.h" />
     <ClInclude Include="tasks.h" />
+    <ClInclude Include="output.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

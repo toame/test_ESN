@@ -1,7 +1,9 @@
 #pragma once
-#include <vector>
-#include <string>
 #include <random>
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <sstream>
 
 #include "constant.h";
 using uniform_real_dist_type = std::uniform_real_distribution<>;
@@ -25,8 +27,8 @@ public:
 	tasks();
 	tasks(int step, int seed);
 	void generate_random_input(const int u_min, const int u_max);
-	void generate_approx_task(const std::vector<double>& tau_set, const std::vector<double>& nu_set);
-	void generate_narma_task(std::vector<int>& tau_set);
+	void generate_approx_task();
+	void generate_narma_task();
 	void generate_L_task(int max_L);
 	void generate_NL_task();
 private:
