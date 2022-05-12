@@ -30,6 +30,7 @@ public:
 	std::mt19937 mt;
 	int wash_out;
 	bool is_echo_state_property;
+	int best_lm;
 
 	reservoir_layer();
 	reservoir_layer(const int unit_size, const int connection_degree, const double iss_factor, const double weight_factor, const double bias_factor, const double p,

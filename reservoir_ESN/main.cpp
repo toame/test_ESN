@@ -121,7 +121,6 @@ int main(void) {
 			std::vector<std::vector<double>> output_node_T(reservoir_subset.size());
 
 			std::vector<std::vector<double>> opt_nmse(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size(), 2));
-			std::vector < std::vector<double>> opt_lm2(SUBSET_SIZE, std::vector<double>(reservoir_task[TRAIN].output_tasks.size()));
 			std::vector < std::vector <std::vector<double>>> opt_w(SUBSET_SIZE, std::vector <std::vector<double>>(reservoir_task[TRAIN].output_tasks.size()));
 			std::cerr << "reservoir_training..." << std::endl;
 #pragma omp parallel for num_threads(THREAD_NUM)
@@ -163,7 +162,6 @@ int main(void) {
 					for (int lm = 0; lm < lambda_step; lm++) {
 						if (lm == 0 || output_learning[k].nmse[i][lm] < opt_nmse[k][i]) {
 							opt_nmse[k][i] = output_learning[k].nmse[i][lm];
-							opt_lm2[k][i] = lm;
 							opt_w[k][i] = output_learning[k].w[i][lm];
 						}
 					}
@@ -203,7 +201,11 @@ int main(void) {
 			// 進捗出力
 			end = std::chrono::system_clock::now();  // 計測終了時間
 			double elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count(); //処理に要した時間をミリ秒に変換
-			std::cerr << (re + 1) << "/" << reservoir_set.size() << " remain est." << (elapsed / 1000.0) / (re + 1) * (reservoir_set.size() - (re + 1)) / 3600.0 << "[hours]" << std::endl;
+			std::cerr << (re + 1) << "/" << reservoir_set.size();
+			std::cerr << std::fixed << std::setprecision(3);
+			std::cerr << " [" << (re + 1.0) * 100 / reservoir_set.size() << "%] ";
+			std::cerr << " elapsed time " << elapsed / 1000.0 / 3600.0 << "[hours]";
+			std::cerr << " remain est." << (elapsed / 1000.0) / (re + 1) * (reservoir_set.size() - (re + 1)) / 3600.0 << "[hours]" << std::endl;
 
 		}
 		outputfile.close();
