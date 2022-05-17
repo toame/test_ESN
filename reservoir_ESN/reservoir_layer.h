@@ -7,9 +7,6 @@
 #include <cassert>
 #include <fstream>
 #include <string>
-#define PI (3.14159265358979)
-#define LINEAR (0)
-#define NON_LINEAR (1)
 typedef double (*NONLINEAR)(const double x);
 class reservoir_layer {
 public:
@@ -42,6 +39,6 @@ public:
 	bool calc_echo_state_property(const std::vector<double>& input_signal);
 	double activation_function(const double x, const int type);
 	
-	static std::vector<reservoir_layer> generate_reservoir(const int unit_size, const int connection_degree, std::vector<std::string> nonlinear_vec, const unsigned int seed, const int wash_out, const std::string toporogy_type);
+	static std::vector<reservoir_layer> generate_reservoir(const int unit_size, const unsigned int loop, const int wash_out, const std::string toporogy_type);
 
 };

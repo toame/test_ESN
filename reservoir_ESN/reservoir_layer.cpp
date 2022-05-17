@@ -1,4 +1,5 @@
 ﻿#include "reservoir_layer.h"
+#include "constant.h"
 double sinc(const double x) {
 	if (x == 0) return 1.0;
 	return sin(PI * x) / (PI * x);
@@ -32,9 +33,12 @@ reservoir_layer::reservoir_layer(const int unit_size, const int connection_degre
 	mt.seed(seed);
 }
 
-std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const int unit_size, const int connection_degree, std::vector<std::string> nonlinear_vec, const unsigned int loop, const int wash_out, const std::string toporogy_type) {
+std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const int unit_size, const unsigned int loop, const int wash_out, const std::string toporogy_type) {
 	std::vector<reservoir_layer> ret;
 
+	int connection_degree = unit_size / 10;
+	if (toporogy_type == "ring") connection_degree = 1;
+	std::vector<std::string> nonlinear_vec{ "sinc", "tanh" };
 	std::vector<double> p_set{ 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 0.95, 1.0, 0.0 };
 	std::vector<double> bias_set{ 0, 1, 2, 3, 5, 8 };
 	std::vector<double> alpha_set{ 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0 };
