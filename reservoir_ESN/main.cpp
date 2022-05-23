@@ -17,7 +17,7 @@
 typedef void (*FUNC)();
 int main(void) {
 
-	const int TRIAL_NUM = 2;	// ループ回数
+	const int TRIAL_NUM = 1;	// ループ回数
 	const int step = 4000;
 	const int wash_out = 400;
 	std::vector<int> unit_sizes = { 100, 100 };
@@ -47,6 +47,12 @@ int main(void) {
 		}
 
 		// 設定出力
+		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,L_cut,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
+		for (int i = 2; i <= 10; i++) outputfile << ",NL_old_" << std::to_string(i);
+		for (int i = 0; i < reservoir_task[TRAIN].output_tasks.size(); i++) {
+			outputfile << "," << reservoir_task[TRAIN].output_tasks[i].task_name;
+		}
+		outputfile << std::endl;
 		output_NL_format();
 
 		std::cerr << reservoir_task[TRAIN].output_tasks.size() << std::endl;

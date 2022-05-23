@@ -81,7 +81,7 @@ int calc_NL(string type, vector<string> elements) {
     }
 }
 string root_path = "../output_data/";
-vector<string> pathes{"NL_0_0.0_100_random"};
+vector<string> pathes{"NL100_random"};
 vector<string> task{"approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0"};
 void add_NL() {
     r_data[0].back() = "NL_test";
@@ -97,6 +97,11 @@ void add_NL() {
     for(int r = 1; r < r_data.size(); r++) {
         double NL = 0;
         vector<string> elements = r_data[r];
+        int tau_0 = 0;
+        for (int i = 1; i <= 10; i++) {
+            if(stod(elements[mp["L_" + to_string(i)]]) >= 0.99) tau_0 = max(i, tau_0);
+        }
+        
         for(int i = 0; i < d_vec.size(); i++) {
             string task_name = "NL_" + to_string(i);
             //std::cerr << task_name << std::endl;
@@ -106,13 +111,14 @@ void add_NL() {
                 d_sum += d[i];
             }
             double tmp_NL = stod(elements[mp[task_name]]);
-            if(tmp_NL > 0.01)
+            if(tmp_NL > 0.25)
                 NL += d_sum * max(0.0, tmp_NL);
         }
         r_data[r].back() = (to_string(NL));
-        for(int i = 0; i < elements.size();i++) {
+        for(int i = 0; i < elements.size() - 1;i++) {
             ofs_csv_file << elements[i] << ",";
         }
+        ofs_csv_file << NL << std::endl;
     }
     return;
 }

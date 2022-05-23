@@ -151,4 +151,7 @@ void tasks::generate_d_vec() {
 	d.resize(4); generate_d_sequence(d_vec, d, 5);
 	d.resize(3); generate_d_sequence(d_vec, d, 6);
 	d.resize(3); generate_d_sequence(d_vec, d, 7);
+	d.resize(2); generate_d_sequence(d_vec, d, 8);
+	d.resize(2); generate_d_sequence(d_vec, d, 9);
+	d.resize(2); generate_d_sequence(d_vec, d, 10);
 }

@@ -86,6 +86,7 @@ public:
 		}
 		const double tmp_NL = d_sum * (1.0 - nmse);
 		const double tmp_NL1 = (1.0 - nmse);
+		sub_NL_old2[idx] = 0;
 		if (tmp_NL >= TRUNC_EPSILON) {
 			NL1_old += tmp_NL1;
 			NL_old += tmp_NL;
