@@ -37,7 +37,7 @@ int main(void) {
 		std::ofstream outputfile("output_data/" + task_name + std::to_string(unit_size) + "_" + toporogy_type + ".csv");
 		
 		// タスク(入力信号 教師信号)の生成
-		tasks reservoir_task[PHASE_NUM] = { tasks(step, 0), tasks(step, 1), tasks(step, 2) };
+		tasks reservoir_task[PHASE_NUM] = { tasks(step, TRAIN), tasks(step, VAL), tasks(step, TEST) };
 		for (int phase = 0; phase < PHASE_NUM; phase++) {
 			reservoir_task[phase].generate_random_input(-1.0, 1.0);
 			reservoir_task[phase].generate_L_task(unit_size);
@@ -54,16 +54,16 @@ int main(void) {
 
 		std::chrono::system_clock::time_point  start, end;
 		start = std::chrono::system_clock::now();
-
+		std::vector<reservoir_layer> reservoir_subset;
 		// リザーバ集合を処理する
 		for (int re = 0; re < reservoir_set.size(); re++) {
-			std::vector<reservoir_layer> reservoir_subset;
+			
 			// 高速化のため、まとめて(=SUBSET_SIZEごとに)リザーバを処理するようにする。
 			reservoir_subset.push_back(reservoir_set[re]);
 			if (reservoir_subset.size() < SUBSET_SIZE && re + 1 < reservoir_set.size()) {
 				continue;
 			}
-
+			
 			/*** 入力によるリザーバの時間発展 ***/
 			std::cerr << "reservoir_update..." << std::endl;
 #pragma omp parallel for num_threads(THREAD_NUM)

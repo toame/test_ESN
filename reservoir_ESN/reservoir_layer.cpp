@@ -39,10 +39,15 @@ std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const int unit_
 	int connection_degree = unit_size / 10;
 	if (toporogy_type == "ring") connection_degree = 1;
 	std::vector<std::string> nonlinear_vec{ "sinc", "tanh" };
-	std::vector<double> p_set{ 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 0.95, 1.0, 0.0 };
-	std::vector<double> bias_set{ 0, 1, 2, 3, 5, 8 };
-	std::vector<double> alpha_set{ 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0 };
-	std::vector<double> sigma_set{ 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2 };
+	//std::vector<double> p_set{ 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 0.95, 1.0, 0.0 };
+	//std::vector<double> bias_set{ 0, 1, 2, 3, 5, 8 };
+	//std::vector<double> alpha_set{ 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0 };
+	//std::vector<double> sigma_set{ 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2 };
+
+	std::vector<double> p_set{ 0.0, 0.2, 0.5, 1.0 };
+	std::vector<double> bias_set{ 0, -1 };
+	std::vector<double> alpha_set{ 0.01, 0.03, 1.0, 3.0, 10.0 };
+	std::vector<double> sigma_set{0.1, 0.2, 0.3, 0.6,  0.9, 1.0, 1.1 };
 
 	for (int seed = 0; seed < loop; seed++) {
 		for (auto nonlinear : nonlinear_vec) {
