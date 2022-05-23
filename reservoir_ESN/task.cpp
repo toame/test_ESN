@@ -202,10 +202,9 @@ void generate_d_sequence_set(std::vector<std::vector<std::vector<int>>>& d_vec) 
 		d.resize(4); generate_d_sequence(d_vec[mode], d, 5);
 		d.resize(3); generate_d_sequence(d_vec[mode], d, 6);
 		d.resize(3); generate_d_sequence(d_vec[mode], d, 7);
-		//for (int u = 9; u < 20; u++) {
-		//	d.resize(2);
-		//	generate_d_sequence(d_vec[mode], d, u);
-		//}
+		d.resize(2); generate_d_sequence(d_vec[mode], d, 8);
+		d.resize(2); generate_d_sequence(d_vec[mode], d, 9);
+		d.resize(2); generate_d_sequence(d_vec[mode], d, 10);
 	}
 }
 
