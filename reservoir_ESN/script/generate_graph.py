@@ -33,7 +33,7 @@ for path in args.data:
                     df2 = df
                 print(df2)
                 data_x = df2['L_cut']
-                if NL_type == "NL_test":
+                if NL_type == "NL_test" and False:
                     data_y = df2["NL_old_2"] + df2["NL_old_3"] + df2["NL_old_4"] + df2["NL_old_5"] + df2["NL_old_6"]
                 else:
                     data_y = df2[NL_type]
@@ -41,8 +41,8 @@ for path in args.data:
                 mappable = ax.scatter(data_x, data_y,s=1, marker=".", c = value, alpha=1, linewidths=1, norm=LogNorm(vmin=0.05, vmax=1.0), cmap='viridis_r')
                 if num != 1:
                     ax.tick_params(axis = 'y', labelcolor = "None")
-                ax.set_ylim(0.0, 500)
-                ax.set_xlim(0.0, 50)
+                ax.set_ylim(0.0, 600)
+                ax.set_xlim(0.0, 60)
                 ax.set_title(function_name + "," + str(bias))
                 #plt.legend(loc = "best")
             fig.colorbar(mappable, ax=ax)

@@ -66,19 +66,19 @@ int calc_L(string type, vector<string> elements) {
         max_L = 100;
         split_L = max_L/splitL_C;
         return stod(elements[mp[type]]) / split_L;
-    } else {
-        assert(false);
     }
+    assert(false);
+    return 1;
 }
 int calc_NL(string type, vector<string> elements) {
     if (mp.find(type) != mp.end()) {
-        if(type == "NL_old" || type == "NL_test") max_NL = 500;
+        if(type == "NL_old" || type == "NL_test" || type == "NL_test") max_NL = 500;
         if(type == "NL_old_2") max_NL = 200;
         split_NL = max_NL/splitNL_C;
         return stod(elements[mp[type]]) / split_NL;
-    } else {
-        assert(false);
     }
+    assert(false);
+    return 1;
 }
 string root_path = "../output_data/";
 vector<string> pathes{"NL100_random"};
@@ -99,7 +99,7 @@ void add_NL() {
         vector<string> elements = r_data[r];
         int tau_0 = 0;
         for (int i = 1; i <= 10; i++) {
-            if(stod(elements[mp["L_" + to_string(i)]]) >= 0.99) tau_0 = max(i, tau_0);
+            if(stod(elements[mp["L_" + to_string(i)]]) >= 0.9) tau_0 = max(i, tau_0);
         }
         
         for(int i = 0; i < d_vec.size(); i++) {
@@ -107,12 +107,20 @@ void add_NL() {
             //std::cerr << task_name << std::endl;
             vector<double> d = d_vec[task_name];
             int d_sum = 0;
+            int tau = 0;
+            int min_tau = 100;
             for(int i = 0; i < d.size(); i++) {
                 d_sum += d[i];
+                if (d[i] > 0) {
+                    tau = max(i, tau);
+                    min_tau = min(min_tau, i);
+                }
             }
             double tmp_NL = stod(elements[mp[task_name]]);
-            if(tmp_NL > 0.25)
+            //std::cerr << d_sum << " " << min_tau << " " << tmp_NL << std::endl;
+            if(min_tau > 0 || 1) {
                 NL += d_sum * max(0.0, tmp_NL);
+            }
         }
         r_data[r].back() = (to_string(NL));
         for(int i = 0; i < elements.size() - 1;i++) {
