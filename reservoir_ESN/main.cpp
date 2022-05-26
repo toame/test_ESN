@@ -44,6 +44,8 @@ int main(void) {
 			reservoir_task[phase].generate_NL_task();
 			reservoir_task[phase].generate_approx_task();
 			reservoir_task[phase].generate_narma_task();
+			
+			//reservoir_task[phase].generate_henon_input_output();
 		}
 
 		// 設定出力

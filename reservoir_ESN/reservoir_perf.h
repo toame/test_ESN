@@ -18,6 +18,7 @@ public:
 	std::vector<double> sub_NL_old;
 	std::vector<double> narma_task;
 	std::vector<double> approx_task;
+	std::vector<double> henon_task;
 	int maxL;
 	reservoir_perf() {
 		L = 0.0;
@@ -57,6 +58,9 @@ public:
 				int idx = stoi(task.task_name.substr(3));
 				std::vector<int> d = _tasks.d_vec[idx];
 				calc_NL(d, task.nmse, task.task_name);
+			}
+			else if (task.task_label == "henon") {
+				henon_task.push_back(task.nmse);
 			}
 			else {
 				std::cerr << "error" << std::endl;
@@ -123,6 +127,7 @@ public:
 		for (int i = 0; i < sub_NL_old2.size(); i++) outputfile << "," << sub_NL_old2[i];
 		for (int i = 0; i < approx_task.size(); i++)	outputfile << "," << approx_task[i];
 		for (int i = 0; i < narma_task.size(); i++) outputfile << "," << narma_task[i];
+		for (int i = 0; i < henon_task.size(); i++) outputfile << "," << henon_task[i];
 		outputfile << std::endl;
 	}
 };

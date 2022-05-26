@@ -30,6 +30,40 @@ void tasks::generate_random_input(const int u_min, const int u_max) {
 	}
 }
 
+void tasks::generate_henon_input_output() {
+	double a = 0.1, b = 0.2, c = 0;
+	const double alpha = 1.4;
+	const double beta = 0.3;
+	std::vector < double> input_signal_tmp;
+	input_signal_tmp.resize(step + 100);
+	for (int t = 0; t < seed * 5000; t++) {
+		c = 1 - alpha * b * b + beta * a;
+		std::swap(a, b);
+		std::swap(b, c);
+	}
+	input_signal_tmp[0] = a;
+	input_signal_tmp[1] = b;
+	for (int t = 2; t < step + 100; t++) {
+		input_signal_tmp[t] = 1 - alpha * input_signal_tmp[t - 1] * input_signal_tmp[t - 1] + beta * input_signal_tmp[t - 2];
+	}
+	for (int t = 0; t < step; t++) {
+		input_signal[t] = input_signal_tmp[t];
+	}
+	
+	std::vector<int> fsteps({ 1, 2, 3, 4, 5, 6, 7 });
+	for (auto fstep : fsteps) {
+		output_task task;
+		task.task_name = "henon_" + std::to_string(fstep);
+		task.task_label = "henon";
+		task.output_signal.resize(step);
+		for (int t = 0; t < step; t++) {
+			task.output_signal[t] = input_signal_tmp[t + fstep];
+		}
+		output_tasks.push_back(task);
+	}
+
+}
+
 void tasks::generate_approx_task() {
 	std::vector<double> approx_nu_set({ -3.0, -2.5, -2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 });
 	std::vector<double> approx_tau_set({ -2, 0, 1, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0 });

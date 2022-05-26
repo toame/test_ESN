@@ -2,7 +2,6 @@
 #include "task.h"
 #include "constant.h"
 
-#define PHASE_NUM (3)
 void generate_input_signal_random(std::vector<double>& input_signal, const int u_min, const int u_delta, const int step, const int seed) {
 	std::mt19937 mt(seed);
 	std::uniform_real_distribution<> rand_0to1(0, 1);
