@@ -118,7 +118,7 @@ void add_NL() {
             }
             double tmp_NL = stod(elements[mp[task_name]]);
             //std::cerr << d_sum << " " << min_tau << " " << tmp_NL << std::endl;
-            if(min_tau > 0 || 1) {
+            if(min_tau > 0 && d_sum > 1) {
                 NL += d_sum * max(0.0, tmp_NL);
             }
         }

@@ -7,12 +7,15 @@ parser = argparse.ArgumentParser(description='NL_L平面を描写する')
 parser.add_argument('--root', default= "..//output_data//", help='ルートパスを指定する')
 parser.add_argument('--output', default="..//fig//")
 parser.add_argument('--data', default= ["NL_0_0.0_100_random"], help='ファイルを指定する', nargs='*')
-parser.add_argument('--NL_types',default = ["NL_old"], help = "NL_typeを指定する", nargs='*')
-parser.add_argument('--taskes',default=["laser1_1", "laser1_2", "laser1_3", "henon_3", "henon_4", "approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0", "narma_10"], nargs='*')
+parser.add_argument('--NL_types',default = ["NL_old", "NL_test"], help = "NL_typeを指定する", nargs='*')
+parser.add_argument('--taskes',default=["laser1_1", "laser1_2", "laser1_3", "henon_3", "henon_4", "approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0", "narma_5", "narma_10"], nargs='*')
 
 args = parser.parse_args()
 for path in args.data:
     for NL_type in args.NL_types:
+        NL_max = 600
+        if NL_type == "NL_test":
+            NL_max = 250
         for task in args.taskes:
             fig = plt.figure()
             ax1 = fig.add_subplot(1, 5, 1)
@@ -46,7 +49,7 @@ for path in args.data:
                 mappable = ax.scatter(data_x, data_y,s=1, marker=".", c = value, alpha=1, linewidths=1, norm=norm, cmap='viridis_r')
                 if num != 1:
                     ax.tick_params(axis = 'y', labelcolor = "None")
-                ax.set_ylim(0.0, 600)
+                ax.set_ylim(0.0, NL_max)
                 ax.set_xlim(0.0, 60)
                 ax.set_title(function_name + "," + str(bias))
                 #plt.legend(loc = "best")
