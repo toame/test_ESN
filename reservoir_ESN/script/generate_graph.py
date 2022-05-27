@@ -8,7 +8,7 @@ parser.add_argument('--root', default= "..//output_data//", help='ルートパ�
 parser.add_argument('--output', default="..//fig//")
 parser.add_argument('--data', default= ["NL_0_0.0_100_random"], help='ファイルを指定する', nargs='*')
 parser.add_argument('--NL_types',default = ["NL_old"], help = "NL_typeを指定する", nargs='*')
-parser.add_argument('--taskes',default=["laser_1", "laser_2", "laser_3", "henon_3", "henon_4", "approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0", "narma_10"], nargs='*')
+parser.add_argument('--taskes',default=["laser1_1", "laser1_2", "laser1_3", "henon_3", "henon_4", "approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0", "narma_10"], nargs='*')
 
 args = parser.parse_args()
 for path in args.data:

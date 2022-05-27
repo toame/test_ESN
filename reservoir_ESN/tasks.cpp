@@ -62,7 +62,7 @@ void tasks::generate_henon_input_output() {
 		output_tasks.push_back(task);
 	}
 }
-void tasks::generate_laser_input_output() {
+void tasks::generate_laser_input_output(int k) {
 	std::ifstream ifs("santafe.dat");
 
 	std::string line;
@@ -77,12 +77,12 @@ void tasks::generate_laser_input_output() {
 		}
 	}
 	for (int t = 0; t < step; t++) {
-		input_signal[t] = input_signal_tmp[t + step * ((seed + 1) % 3)];
+		input_signal[t] = input_signal_tmp[t + step * ((seed + k) % 3)];
 	}
 	std::vector<int> fsteps({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
 	for (auto fstep : fsteps) {
 		output_task task;
-		task.task_name = "laser_" + std::to_string(fstep);
+		task.task_name = "laser" + std::to_string(k) + "_" + std::to_string(fstep);
 		task.task_label = "laser";
 		task.output_signal.resize(step);
 		for (int t = 0; t < step; t++) {

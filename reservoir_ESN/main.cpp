@@ -52,7 +52,15 @@ int main(void) {
 		}
 		for (int phase = 0; phase < PHASE_NUM; phase++) {
 			reservoir_task[2].push_back(tasks(step, phase));
-			reservoir_task[2].back().generate_laser_input_output();
+			reservoir_task[2].back().generate_laser_input_output(0);
+		}
+		for (int phase = 0; phase < PHASE_NUM; phase++) {
+			reservoir_task[3].push_back(tasks(step, phase));
+			reservoir_task[3].back().generate_laser_input_output(1);
+		}
+		for (int phase = 0; phase < PHASE_NUM; phase++) {
+			reservoir_task[4].push_back(tasks(step, phase));
+			reservoir_task[4].back().generate_laser_input_output(2);
 		}
 
 
