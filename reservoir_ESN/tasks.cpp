@@ -1,5 +1,5 @@
 #include "tasks.h"
-
+#include <fstream>
 template <typename T>
 std::string to_string_with_precision(const T a_value, const int n = 6)
 {
@@ -50,7 +50,7 @@ void tasks::generate_henon_input_output() {
 		input_signal[t] = input_signal_tmp[t];
 	}
 	
-	std::vector<int> fsteps({ 1, 2, 3, 4, 5, 6, 7 });
+	std::vector<int> fsteps({ 1, 2, 3, 4, 5, 6, 7, 8 });
 	for (auto fstep : fsteps) {
 		output_task task;
 		task.task_name = "henon_" + std::to_string(fstep);
@@ -61,7 +61,35 @@ void tasks::generate_henon_input_output() {
 		}
 		output_tasks.push_back(task);
 	}
+}
+void tasks::generate_laser_input_output() {
+	std::ifstream ifs("santafe.dat");
 
+	std::string line;
+	int cnt = 0;
+	std::vector <double> input_signal_tmp;
+	while (std::getline(ifs, line)) {
+		cnt--;
+		if (cnt <= 0) {
+			double num = std::stoi(line) / 255.0;
+			//std::cerr << num << std::endl;
+			input_signal_tmp.push_back(num);
+		}
+	}
+	for (int t = 0; t < step; t++) {
+		input_signal[t] = input_signal_tmp[t + step * ((seed + 1) % 3)];
+	}
+	std::vector<int> fsteps({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+	for (auto fstep : fsteps) {
+		output_task task;
+		task.task_name = "laser_" + std::to_string(fstep);
+		task.task_label = "laser";
+		task.output_signal.resize(step);
+		for (int t = 0; t < step; t++) {
+			task.output_signal[t] = input_signal[t + fstep];
+		}
+		output_tasks.push_back(task);
+	}
 }
 
 void tasks::generate_approx_task() {

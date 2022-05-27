@@ -19,6 +19,7 @@ public:
 	std::vector<double> narma_task;
 	std::vector<double> approx_task;
 	std::vector<double> henon_task;
+	std::vector<double> laser_task;
 	int maxL;
 	reservoir_perf() {
 		L = 0.0;
@@ -61,6 +62,9 @@ public:
 			}
 			else if (task.task_label == "henon") {
 				henon_task.push_back(task.nmse);
+			}
+			else if (task.task_label == "laser") {
+				laser_task.push_back(task.nmse);
 			}
 			else {
 				std::cerr << "error" << std::endl;
@@ -128,6 +132,7 @@ public:
 		for (int i = 0; i < approx_task.size(); i++)	outputfile << "," << approx_task[i];
 		for (int i = 0; i < narma_task.size(); i++) outputfile << "," << narma_task[i];
 		for (int i = 0; i < henon_task.size(); i++) outputfile << "," << henon_task[i];
+		for (int i = 0; i < laser_task.size(); i++) outputfile << "," << laser_task[i];
 		outputfile << std::endl;
 	}
 };

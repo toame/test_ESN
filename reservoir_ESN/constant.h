@@ -1,5 +1,6 @@
 #define PI (3.14159265358979)
 #define PHASE_NUM (3)
+#define TASK_NUM (3)
 #define TRAIN (0)
 #define VAL (1)
 #define TEST (2)
