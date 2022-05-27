@@ -20,21 +20,19 @@ int main(void) {
 	const int TRIAL_NUM = 1;	// ループ回数
 	const int step = 4000;
 	const int wash_out = 400;
-	std::vector<int> unit_sizes = { 100, 100 };
-	std::vector<std::string> toporogy = { "random", "ring" };
+	std::vector<int> unit_sizes = { 100 };
 	const std::string task_name = "NL";
 	const int lambda_step = 4;
 
 	for (int r = 0; r < unit_sizes.size(); r++) {
 		const int unit_size = unit_sizes[r];
-		const std::string toporogy_type = toporogy[r];
 
 		std::vector<std::vector<std::vector<std::vector<std::vector<double>>>>> output_node(SUBSET_SIZE, std::vector<std::vector<std::vector<std::vector<double>>>>(TASK_NUM, std::vector<std::vector<std::vector<double>>>(PHASE_NUM, std::vector<std::vector<double>>(step + 1, std::vector<double>(unit_size + 1, 0)))));
 
 		std::vector<std::vector<double>> input_signal(PHASE_NUM);
 		std::vector<std::vector<std::pair<std::string, std::vector<double>>>> teacher_signals(PHASE_NUM);
 
-		std::ofstream outputfile("output_data/" + task_name + std::to_string(unit_size) + "_" + toporogy_type + ".csv");
+		std::ofstream outputfile("output_data/" + task_name + std::to_string(unit_size) + ".csv");
 
 		// タスク(入力信号 教師信号)の生成
 		std::vector<tasks> reservoir_task[TASK_NUM];
@@ -62,7 +60,10 @@ int main(void) {
 			reservoir_task[4].push_back(tasks(step, phase));
 			reservoir_task[4].back().generate_laser_input_output(2);
 		}
-
+		for (int phase = 0; phase < PHASE_NUM; phase++) {
+			reservoir_task[5].push_back(tasks(step, phase));
+			reservoir_task[5].back().generate_count_input_output();
+		}
 
 		// 設定出力
 		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,L_cut,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
@@ -76,7 +77,7 @@ int main(void) {
 		output_NL_format();
 
 		std::cerr << reservoir_task[0][TRAIN].output_tasks.size() << std::endl;
-		auto reservoir_set = reservoir_layer::generate_reservoir(unit_size, TRIAL_NUM, wash_out, toporogy_type);
+		auto reservoir_set = reservoir_layer::generate_reservoir(unit_size, TRIAL_NUM, wash_out);
 
 		std::chrono::system_clock::time_point  start, end;
 		start = std::chrono::system_clock::now();

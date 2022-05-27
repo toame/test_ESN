@@ -39,6 +39,6 @@ public:
 	bool calc_echo_state_property(const std::vector<double>& input_signal);
 	double activation_function(const double x, const int type);
 	
-	static std::vector<reservoir_layer> generate_reservoir(const int unit_size, const unsigned int loop, const int wash_out, const std::string toporogy_type);
+	static std::vector<reservoir_layer> generate_reservoir(const int unit_size, const unsigned int loop, const int wash_out);
 
 };

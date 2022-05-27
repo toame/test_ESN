@@ -81,7 +81,7 @@ int calc_NL(string type, vector<string> elements) {
     return 1;
 }
 string root_path = "../output_data/";
-vector<string> pathes{"NL100_random"};
+vector<string> pathes{"NL100"};
 vector<string> task{"approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0"};
 void add_NL() {
     r_data[0].back() = "NL_test";

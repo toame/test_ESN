@@ -33,12 +33,12 @@ reservoir_layer::reservoir_layer(const int unit_size, const int connection_degre
 	mt.seed(seed);
 }
 
-std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const int unit_size, const unsigned int loop, const int wash_out, const std::string toporogy_type) {
+std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const int unit_size, const unsigned int loop, const int wash_out) {
 	std::vector<reservoir_layer> ret;
 
-	int connection_degree = unit_size / 10;
-	if (toporogy_type == "ring") connection_degree = 1;
+
 	std::vector<std::string> nonlinear_vec{ "sinc", "tanh" };
+	std::vector<std::string> toporogy_types{ "random", "sparse_random", "ring", "doubly_ring" };
 	std::vector<double> p_set{ 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 0.95, 1.0, 0.0 };
 	std::vector<double> bias_set{ 0, 1, 2, 3, 5, 8 };
 	std::vector<double> alpha_set{ 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0 };
@@ -55,7 +55,13 @@ std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const int unit_
 				for (auto bias : bias_set) {
 					for (auto alpha : alpha_set) {
 						for (auto sigma : sigma_set) {
-							ret.push_back(reservoir_layer(unit_size, connection_degree, alpha, sigma, bias, p, nonlinear, seed, wash_out, toporogy_type));
+							for (auto toporogy_type : toporogy_types) {
+								int connection_degree = unit_size / 10;
+								if (toporogy_type == "ring") connection_degree = 1;
+								if (toporogy_type == "doubly_ring") connection_degree = 2;
+								if (toporogy_type == "sparse_random") connection_degree = 1;
+								ret.push_back(reservoir_layer(unit_size, connection_degree, alpha, sigma, bias, p, nonlinear, seed, wash_out, toporogy_type));
+							}
 						}
 					}
 				}
@@ -83,10 +89,21 @@ void reservoir_layer::generate_reservoir() {
 			for (int k = 1; k <= connection_degree; k++) {
 				adjacency_list[n][k] = permutation[k - 1];
 			}
+		}else if (toporogy_type == "sparse_random") {
+			std::shuffle(permutation.begin(), permutation.end(), mt);
+			for (int k = 1; k <= connection_degree; k++) {
+				adjacency_list[n][k] = permutation[k - 1];
+			}
 		}
 		else if (toporogy_type == "ring") {
 			adjacency_list[n][1] = n + 1;
 			if (n == unit_size) adjacency_list[n][1] = 1;
+		}
+		else if (toporogy_type == "doubly_ring") {
+			adjacency_list[n][1] = n + 1;
+			if (n == unit_size) adjacency_list[n][1] = 1;
+			adjacency_list[n][2] = n - 1;
+			if (n == 1) adjacency_list[n][2] = unit_size;
 		}
 		else {
 			std::cerr << "no found toporogy_type:" << toporogy_type << std::endl;

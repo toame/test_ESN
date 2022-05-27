@@ -29,6 +29,7 @@ public:
 	void generate_random_input(const int u_min, const int u_max);
 	void generate_henon_input_output();
 	void generate_laser_input_output(int k);
+	void generate_count_input_output();
 	void generate_approx_task();
 	void generate_narma_task();
 	void generate_L_task(int max_L);

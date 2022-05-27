@@ -62,6 +62,25 @@ void tasks::generate_henon_input_output() {
 		output_tasks.push_back(task);
 	}
 }
+void tasks::generate_count_input_output() {
+	for (int t = 0; t < step; t++) {
+		input_signal[t] = (mt() % 2) * 2 - 1.0;
+	}
+	std::vector<int> fsteps({ 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+	for (auto fstep : fsteps) {
+		output_task task;
+		task.task_name = "count_" + std::to_string(fstep);
+		task.task_label = "count";
+		task.output_signal.resize(step);
+		for (int t = 0; t < step; t++) {
+			task.output_signal[t] = 1.0;
+			for (int i = std::max<int>(0, t - fstep + 1); i <= t; i++) {
+				task.output_signal[t] *= input_signal[i];
+			}
+		}
+		output_tasks.push_back(task);
+	}
+}
 void tasks::generate_laser_input_output(int k) {
 	std::ifstream ifs("santafe.dat");
 
