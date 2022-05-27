@@ -8,7 +8,7 @@ parser.add_argument('--root', default= "..//output_data//", help='ルートパ�
 parser.add_argument('--output', default="..//fig//")
 parser.add_argument('--data', default= ["NL_0_0.0_100_random"], help='ファイルを指定する', nargs='*')
 parser.add_argument('--NL_types',default = ["NL_old"], help = "NL_typeを指定する", nargs='*')
-parser.add_argument('--taskes',default=["approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0", "narma_10"], nargs='*')
+parser.add_argument('--taskes',default=["laser_1", "laser_2", "laser_3", "henon_3", "henon_4", "approx_3_0.0", "approx_6_-0.5", "approx_11_-1.0", "narma_10"], nargs='*')
 
 args = parser.parse_args()
 for path in args.data:
@@ -38,7 +38,12 @@ for path in args.data:
                 else:
                     data_y = df2[NL_type]
                 value = df2[task]
-                mappable = ax.scatter(data_x, data_y,s=1, marker=".", c = value, alpha=1, linewidths=1, norm=LogNorm(vmin=0.05, vmax=1.0), cmap='viridis_r')
+                norm = LogNorm(vmin=0.05, vmax=1.0)
+                if task in "henon":
+                    norm = LogNorm(vmin=0.03, vmax=1.0)
+                if task in "laser":
+                    norm = LogNorm(vmin=0.03, vmax=1.0)
+                mappable = ax.scatter(data_x, data_y,s=1, marker=".", c = value, alpha=1, linewidths=1, norm=norm, cmap='viridis_r')
                 if num != 1:
                     ax.tick_params(axis = 'y', labelcolor = "None")
                 ax.set_ylim(0.0, 600)
