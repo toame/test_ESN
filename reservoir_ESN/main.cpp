@@ -24,6 +24,7 @@ int main(void) {
 	const std::string task_name = "NL";
 	const int lambda_step = 4;
 
+
 	for (int r = 0; r < unit_sizes.size(); r++) {
 		const int unit_size = unit_sizes[r];
 

@@ -38,3 +38,5 @@ private:
 	void generate_d_sequence(std::vector<std::vector<int>>& d_vec, std::vector<int>& d, int d_sum_remain, int depth);
 	void generate_d_vec();
 };
+
+double chebyshev(int i, double x);

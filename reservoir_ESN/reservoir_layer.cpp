@@ -38,7 +38,7 @@ std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const int unit_
 
 
 	std::vector<std::string> nonlinear_vec{ "sinc", "tanh" };
-	std::vector<std::string> toporogy_types{ "random", "sparse_random", "ring", "doubly_ring" };
+	std::vector<std::string> toporogy_types{ "random", "ring", "doubly_ring", "sparse_random" };
 	std::vector<double> p_set{ 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 0.95, 1.0, 0.0 };
 	std::vector<double> bias_set{ 0, 1, 2, 3, 5, 8 };
 	std::vector<double> alpha_set{ 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0 };
@@ -91,7 +91,10 @@ void reservoir_layer::generate_reservoir() {
 			}
 		}else if (toporogy_type == "sparse_random") {
 			std::shuffle(permutation.begin(), permutation.end(), mt);
-			for (int k = 1; k <= connection_degree; k++) {
+			if (n % 4 == 0) {
+				adjacency_list[n].resize(connection_degree);
+			}
+			for (int k = 1; k < adjacency_list[n].size(); k++) {
 				adjacency_list[n][k] = permutation[k - 1];
 			}
 		}
@@ -142,7 +145,7 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 	for (int t = 0; t < t_size; t++) {
 		for (int n = 1; n <= unit_size; n++) {
 			input_sum_node[n] = input_signal_strength[n] * input_signal[t];
-			for (int k = 1; k <= connection_degree; k++) {
+			for (int k = 1; k < adjacency_list[n].size(); k++) {
 				input_sum_node[n] += weight_reservoir[n][k] * output_node[t][adjacency_list[n][k]];
 			}
 			input_sum_node[n] += weight_reservoir[n][0] * output_node[t][0] * bias_factor;

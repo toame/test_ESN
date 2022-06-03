@@ -192,6 +192,22 @@ void tasks::generate_L_task(int max_L) {
 	}
 }
 
+double chebyshev(int i, double x) {
+	if (i == 0) return 1.0;
+	else if (i == 1) return x;
+	else if (i == 2) return 2.0 * x * x - 1.0;
+	else if (i == 3) return 4.0 * x * x * x - 3.0 * x;
+	else if (i == 4) return 8.0 * pow(x, 4.0) - 8.0 * pow(x, 2.0) + 1.0;
+	else if (i == 5) return 16.0 * pow(x, 5.0) - 20.0 * pow(x, 3.0) + 5.0 * x;
+	else if (i == 6) return 32.0 * pow(x, 6.0) - 48.0 * pow(x, 4.0) + 18.0 * pow(x, 2.0) - 1.0;
+	else if (i == 7) return 64.0 * pow(x, 7.0) - 112.0 * pow(x, 5.0) + 56.0 * pow(x, 3.0) - 7.0 * x;
+	else if (i == 8) return 128.0 * pow(x, 8.0) - 256.0 * pow(x, 6.0) + 160.0 * pow(x, 4.0) - 32.0 * pow(x, 2.0) + 1.0;
+	else if (i == 9) return 256.0 * pow(x, 9.0) - 576.0 * pow(x, 7.0) + 432.0 * pow(x, 5.0) - 120.0 * pow(x, 3.0) + 9.0 * x;
+	else if (i == 10) return 512.0 * pow(x, 10.0) - 1280.0 * pow(x, 8.0) + 1120.0 * pow(x, 6.0) - 400.0 * pow(x, 4.0) + 50.0 * pow(x, 2.0) - 1.0;
+	else if (i == 11) return 1024.0 * pow(x, 11.0) - 2816.0 * pow(x, 9.0) + 2816.0 * pow(x, 7.0) - 1232.0 * pow(x, 5.0) + 220.0 * pow(x, 3.0) - 11.0 * x;
+	return 1.0;
+}
+
 void tasks::generate_NL_task() {
 	tasks::generate_d_vec();
 	for (int i = 0; i < d_vec.size(); i++) {
@@ -205,7 +221,8 @@ void tasks::generate_NL_task() {
 			for (int i = 0; i < d.size(); i++) {
 				if (t - (i + 1) >= 0) {
 					assert(-1.0 < input_signal[t - i] && input_signal[t - i] < 1.0);
-					x *= std::legendre(d[i], input_signal[t - i]);
+					//x *= std::legendre(d[i], input_signal[t - i]);
+					x *= chebyshev(d[i], input_signal[t - i]);
 				}
 			}
 			task.output_signal[t] = x;
