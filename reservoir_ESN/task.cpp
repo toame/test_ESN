@@ -2,35 +2,6 @@
 #include "task.h"
 #include "constant.h"
 
-void generate_d_sequence(std::vector<std::vector<int>>& d_vec, std::vector<int>& d, int d_sum_remain, int depth = 0) {
-	if (d_sum_remain <= 0) {
-		d_vec.push_back(d);
-		// for(auto& e: d) std::cerr << e << " ";
-		// std::cerr << std::endl;
-		return;
-	}
-	// std::cerr << d_sum_remain << " " << depth << std::endl;
-	d[depth]++;
-	generate_d_sequence(d_vec, d, d_sum_remain - 1, depth);
-	d[depth]--;
-	if (depth + 1 < d.size()) generate_d_sequence(d_vec, d, d_sum_remain, depth + 1);
-}
-
-void generate_d_sequence_set(std::vector<std::vector<std::vector<int>>>& d_vec) {
-	for (int mode = 0; mode < PHASE_NUM; mode++) {
-		std::vector<int> d;
-		d.resize(12); generate_d_sequence(d_vec[mode], d, 2);
-		d.resize(8); generate_d_sequence(d_vec[mode], d, 3);
-		d.resize(6); generate_d_sequence(d_vec[mode], d, 4);
-		d.resize(4); generate_d_sequence(d_vec[mode], d, 5);
-		d.resize(3); generate_d_sequence(d_vec[mode], d, 6);
-		d.resize(3); generate_d_sequence(d_vec[mode], d, 7);
-		d.resize(2); generate_d_sequence(d_vec[mode], d, 8);
-		d.resize(2); generate_d_sequence(d_vec[mode], d, 9);
-		d.resize(2); generate_d_sequence(d_vec[mode], d, 10);
-	}
-}
-
 inline double squared(const double x) {
 	return x * x;
 }

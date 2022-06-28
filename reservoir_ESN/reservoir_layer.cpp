@@ -91,7 +91,7 @@ void reservoir_layer::generate_reservoir() {
 			}
 		}else if (toporogy_type == "sparse_random") {
 			std::shuffle(permutation.begin(), permutation.end(), mt);
-			if (n % 4 == 0) {
+			if (n % 2 == 0) {
 				adjacency_list[n].resize(connection_degree);
 			}
 			for (int k = 1; k < adjacency_list[n].size(); k++) {

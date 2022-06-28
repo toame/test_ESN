@@ -15,3 +15,4 @@
 #define MAX_TASK_SIZE (1000)
 #define THREAD_NUM (16)
 #define SUBSET_SIZE (THREAD_NUM * 1)
+#define MAX_NL (16)

@@ -14,6 +14,7 @@ const int splitL_C = 50;
 const int splitNL_C = 50;
 
 map<string, int> mp;
+map<string, pair<double, double>> component;
 vector<vector<string>> input_csv(string path) {
     string str_buf, str_conma_buf;
     ifstream ifs_csv_file(path);
@@ -62,6 +63,17 @@ void read_d_vec(string path) {
     }
     std::cerr << "d_vec_size:" << d_vec.size() << std::endl;
 }
+void read_component(string path) {
+    vector<vector<string>> data_vec = input_csv(path + "component.csv");
+    std::cerr << data_vec.size() << std::endl;
+    for(int r = 0; r < data_vec.size(); r++) {
+        vector<string> elements = data_vec[r];
+        vector<double> tmp;
+        component[elements[0]] = make_pair(stod(elements[1]), stod(elements[2]));
+        cerr << elements[0] << " " << component[elements[0]].first << " " << component[elements[0]].second << endl;
+    }
+    return;
+}
 vector<vector<string>> r_data;
 int calc_L(string type, vector<string> elements) {
     if (mp.find(type) != mp.end()) {
@@ -98,12 +110,21 @@ void add_NL() {
         mp[r_data[0][i]] = i;
     }
     for(int r = 1; r < r_data.size(); r++) {
+        vector<string> elements = r_data[r];
         double L = 0.0;
         double NL = 0.0;
-        vector<string> elements = r_data[r];
         int tau_0 = 0;
-        for (int i = 1; i <= 10; i++) {
-            if(stod(elements[mp["L_" + to_string(i)]]) >= 0.9) tau_0 = max(i, tau_0);
+        int tau_1 = 1000;
+        for (int i = 1; i <= 100; i++) {
+            //if(stod(elements[mp["L_" + to_string(i)]]) >= 0.9) {
+            tau_0 = max(i, tau_0);
+            // L += stod(elements[mp["L_" + to_string(i)]]) * component["L_" + to_string(i)].first;
+            // NL += stod(elements[mp["L_" + to_string(i)]]) * component["L_" + to_string(i)].second;
+            // L += sqrt(i) * stod(elements[mp["L_" + to_string(i)]]);
+            //}
+            // if(stod(elements[mp["L_" + to_string(i)]]) >= 0.1) {
+            //     L += stod(elements[mp["L_" + to_string(i)]]);
+            // }
         }
         
         for(int i = 0; i < d_vec.size(); i++) {
@@ -112,22 +133,27 @@ void add_NL() {
             vector<double> d = d_vec[task_name];
             int d_sum = 0;
             int tau = 0;
-            int max_d = 0;
+            int kind = 0;
             for(int i = 0; i < d.size(); i++) {
                 d_sum += d[i];
-                max_d = max<int>(max_d, d[i]);
                 if (d[i] > 0) {
+                    kind++;
                     tau = max(i, tau);
                 }
             }
             double tmp_NL = stod(elements[mp[task_name]]);
-
-            //NL += d_sum/(double)(tau + 1.0) * max(0.0, tmp_NL);
-            NL += d_sum * max(0.0, tmp_NL);
-            if(d_sum == 2) {
-                //L += tau/(double)(tau + d_sum - 1.0) * max(0.0, tmp_NL);
+            //if(tmp_NL < 0.1) continue;
+            // L += sqrt(tau) * max(0.0, tmp_NL);
+            // NL += sqrt(d_sum - 1.0) * max(0.0, tmp_NL);
+                
+            // if (tau > 0 && d_sum <= 6)
+            //     NL += d_sum * max(0.0, tmp_NL);
+            // L += tmp_NL * component[task_name].first;
+            // NL += tmp_NL * component[task_name].second;
+            if(d_sum <= 2 && kind == d_sum)
                 L += d_sum * max(0.0, tmp_NL);
-            }
+            else
+                NL += d_sum * max(0.0, tmp_NL);
         }
         r_data[r].back() = (to_string(NL));
         for(int i = 0; i < elements.size() - 2;i++) {
@@ -140,6 +166,7 @@ void add_NL() {
 int main (void) {
     
     read_d_vec(root_path);
+    read_component(root_path);
     for(auto path: pathes) {
         r_data = input_csv(root_path + path + ".csv");
         cerr << "read completed" << endl;

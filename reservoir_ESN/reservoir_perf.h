@@ -31,7 +31,7 @@ public:
 		NL_old_cut1 = 0.0;
 		NL_old_cut2 = 0.0;
 		maxL = 0;
-		sub_NL_old.resize(10);
+		sub_NL_old.resize(MAX_NL + 1);
 	}
 	reservoir_perf(tasks _tasks) {
 		this->_tasks = _tasks;
@@ -43,7 +43,7 @@ public:
 		NL_old_cut1 = 0.0;
 		NL_old_cut2 = 0.0;
 		maxL = 0;
-		sub_NL_old.resize(10);
+		sub_NL_old.resize(MAX_NL + 1);
 	}
 	void add_task(tasks _tasks) {
 		for (int i = 0; i < _tasks.output_tasks.size(); i++) {
@@ -129,8 +129,7 @@ public:
 				   << weight_factor;
 		outputfile << "," << L << "," << L_cut << "," << NL << "," << NL_old << "," << NL1_old << "," << NL_old_cut1 << "," << NL_old_cut2;
 
-		for (int i = 2; i <= 10; i++) outputfile << "," << sub_NL_old[i];
-		//for (int i = 0; i < sub_NL.size(); i++) outputfile << "," << sub_NL[k][i];
+		for (int i = 2; i <= MAX_NL; i++) outputfile << "," << sub_NL_old[i];
 		for (int i = 0; i < sub_L.size(); i++) outputfile << "," << sub_L[i];
 		for (int i = 0; i < sub_NL_old2.size(); i++) outputfile << "," << sub_NL_old2[i];
 		for (int i = 0; i < approx_task.size(); i++)	outputfile << "," << approx_task[i];

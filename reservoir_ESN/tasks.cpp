@@ -12,13 +12,11 @@ tasks::tasks() {
 	seed = 0;
 	step = 4000;
 	input_signal.resize(step);
-	d_vec.resize(PHASE_NUM);
 }
 tasks::tasks(int step, int seed) {
 	this->step = step;
 	this->seed = seed;
 	input_signal.resize(step);
-	d_vec.resize(PHASE_NUM);
 }
 
 // [u_min, u_max]‚Ì”ÍˆÍ‚Åˆê—l—”‚ğ¶¬‚·‚é
@@ -219,10 +217,12 @@ void tasks::generate_NL_task() {
 		for (int t = 0; t < step; t++) {
 			double x = 1.0;
 			for (int i = 0; i < d.size(); i++) {
-				if (t - (i + 1) >= 0) {
+				if (t - i >= 0) {
 					assert(-1.0 < input_signal[t - i] && input_signal[t - i] < 1.0);
-					//x *= std::legendre(d[i], input_signal[t - i]);
-					x *= chebyshev(d[i], input_signal[t - i]);
+					x *= std::legendre(d[i], input_signal[t - i]);
+					//x *= chebyshev(d[i], input_signal[t - i]);
+					// x = sin(d[i] * PI * input_signal[t - i] + 0.25 * PI) - average;
+					//x *= sin(0.6 * d[i] * PI * input_signal[t - i] + 0.25 * PI);
 				}
 			}
 			task.output_signal[t] = x;
@@ -231,7 +231,7 @@ void tasks::generate_NL_task() {
 	}
 }
 void tasks::generate_d_sequence(std::vector<std::vector<int>>& d_vec, std::vector<int>& d, int d_sum_remain, int depth = 0) {
-	if (d_sum_remain <= 0) {
+	if (d_sum_remain <= 0  && d.size() > 0) {
 		d_vec.push_back(d);
 		return;
 	}
@@ -243,13 +243,26 @@ void tasks::generate_d_sequence(std::vector<std::vector<int>>& d_vec, std::vecto
 
 void tasks::generate_d_vec() {
 	std::vector<int> d;
-	d.resize(12); generate_d_sequence(d_vec, d, 2);
+	d.resize(14); generate_d_sequence(d_vec, d, 2);
+	std::cerr << 2 << " " << d_vec.size() << std::endl;
 	d.resize(8); generate_d_sequence(d_vec, d, 3);
-	d.resize(6); generate_d_sequence(d_vec, d, 4);
+	std::cerr << 3 << " " << d_vec.size() << std::endl;
+	d.resize(5); generate_d_sequence(d_vec, d, 4);
+	std::cerr << 4 << " " << d_vec.size() << std::endl;
 	d.resize(4); generate_d_sequence(d_vec, d, 5);
+	std::cerr << 5 << " " << d_vec.size() << std::endl;
 	d.resize(3); generate_d_sequence(d_vec, d, 6);
+	std::cerr << 6 << " " << d_vec.size() << std::endl;
 	d.resize(3); generate_d_sequence(d_vec, d, 7);
-	d.resize(2); generate_d_sequence(d_vec, d, 8);
-	d.resize(2); generate_d_sequence(d_vec, d, 9);
-	d.resize(2); generate_d_sequence(d_vec, d, 10);
+	std::cerr << 7 << " " << d_vec.size() << std::endl;
+	for (int i = 8; i <= 16; i++) {
+		d.resize(2); generate_d_sequence(d_vec, d, i);
+		std::cerr << i << " " << d_vec.size() << std::endl;
+	}
+	//d.resize(12); generate_d_sequence(d_vec, d, 2);
+	//d.resize(8); generate_d_sequence(d_vec, d, 3);
+	//d.resize(6); generate_d_sequence(d_vec, d, 4);
+	//d.resize(4); generate_d_sequence(d_vec, d, 5);
+	//d.resize(3); generate_d_sequence(d_vec, d, 6);
+	//d.resize(3); generate_d_sequence(d_vec, d, 7);
 }
