@@ -30,11 +30,12 @@ public:
 	int best_lm;
 	double input_gain;
 	double feed_gain;
+	double d;
 	std::vector<std::vector<double>> J;
 	std::vector<double> a;
 	std::vector<double> b;
 	reservoir_layer();
-	reservoir_layer(const int unit_size, const int connection_degree, const double iss_factor, const double weight_factor, const double bias_factor, const double p,
+	reservoir_layer(const int unit_size, const int connection_degree, const double iss_factor, const double input_gain, const double feed_gain, const double d, const double p,
 		std::string nonlinear_name, const unsigned int seed, const int wash_out, const std::string toporogy_type);
 
 	void generate_reservoir();

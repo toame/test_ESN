@@ -21,7 +21,7 @@ double TD_exp(const double x, double J, double input_gain, double feed_gain) {
 	return feed_gain * exp(-x) * sin(x + input_gain * J);
 }
 reservoir_layer::reservoir_layer() {}
-reservoir_layer::reservoir_layer(const int unit_size, const int connection_degree,const double iss_factor, const double input_gain, const double feed_gain, const double p,
+reservoir_layer::reservoir_layer(const int unit_size, const int connection_degree, const double iss_factor, const double input_gain, const double feed_gain, const double d, const double p,
 	std::string nonlinear_name, const unsigned int seed, const int wash_out, const std::string toporogy_type) {
 	this->unit_size = unit_size;
 	this->connection_degree = connection_degree;
@@ -35,6 +35,7 @@ reservoir_layer::reservoir_layer(const int unit_size, const int connection_degre
 	this->toporogy_type = toporogy_type;
 	this->input_gain = input_gain;
 	this->feed_gain = feed_gain;
+	this->d = d / unit_size;
 	if (nonlinear_name == "TD_ikeda") nonlinear = TD_ikeda;
 	else if (nonlinear_name == "TD_exp") nonlinear = TD_exp;
 	else assert(false);
@@ -42,7 +43,6 @@ reservoir_layer::reservoir_layer(const int unit_size, const int connection_degre
 	node_type.resize(unit_size + 1);
 	adjacency_list.resize(unit_size + 1, std::vector<int>(connection_degree + 1));
 	weight_reservoir.resize(unit_size + 1, std::vector<double>(connection_degree + 1));
-	J.resize(4000 + 1, std::vector<double>(unit_size + 1));
 	input_signal_strength.resize(unit_size + 1);
 	mt.seed(seed);
 }
@@ -52,29 +52,33 @@ std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const int unit_
 
 
 	std::vector<std::string> nonlinear_vec{ "TD_ikeda", "TD_exp" };
-	std::vector<std::string> toporogy_types{ "random" };
+	std::vector<std::string> toporogy_types{ "log", "linear" };
 	//std::vector<double> p_set{ 0.05, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 0.95, 1.0, 0.0 };
 	//std::vector<double> bias_set{ 0, 1, 2, 3, 5, 8 };
 	//std::vector<double> alpha_set{ 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0 };
 	//std::vector<double> sigma_set{ 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2 };
 
-	std::vector<double> p_set{ 0.2, 0.5, 0.8, 1.0 };
-	std::vector<double> bias_set{ 0.1, 0.15, 0.2, 0.25, 0.3 };
-	std::vector<double> alpha_set{ 0.1, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8 };
-	std::vector<double> sigma_set{ 0.7, 0.8, 0.9, 1.0, 1.1, 1.2 };
+	std::vector<double> p_set{ 1.0 };
+	std::vector<double> input_gain_set{ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 };
+	std::vector<double> alpha_set{ 0.01, 0.02, 0.03, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0 };
+	//std::vector<double> alpha_set{ 0.02, 0.04, 0.08, 0.16, 0.3, 0.6, 1.2, 2.4, 4.8, 9.6 };
+	std::vector<double> feed_gain_set{ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1 };
+	std::vector<double> d_set{ 1, 2, 4, 8, 16, 32, 64 };
 
 	for (int seed = 0; seed < loop; seed++) {
 		for (auto nonlinear : nonlinear_vec) {
 			for (auto p : p_set) {
-				for (auto bias : bias_set) {
+				for (auto input_gain : input_gain_set) {
 					for (auto alpha : alpha_set) {
-						for (auto sigma : sigma_set) {
-							for (auto toporogy_type : toporogy_types) {
-								int connection_degree = unit_size / 10;
-								if (toporogy_type == "ring") connection_degree = 1;
-								if (toporogy_type == "doubly_ring") connection_degree = 2;
-								if (toporogy_type == "sparse_random") connection_degree = 1;
-								ret.push_back(reservoir_layer(unit_size, connection_degree, alpha, sigma, bias, p, nonlinear, seed, wash_out, toporogy_type));
+						for (auto feed_gain : feed_gain_set) {
+							for (auto d : d_set) {
+								for (auto toporogy_type : toporogy_types) {
+									int connection_degree = unit_size / 10;
+									if (toporogy_type == "ring") connection_degree = 1;
+									if (toporogy_type == "doubly_ring") connection_degree = 2;
+									if (toporogy_type == "sparse_random") connection_degree = 1;
+									ret.push_back(reservoir_layer(unit_size, connection_degree, alpha, input_gain, feed_gain, d, p, nonlinear, seed, wash_out, toporogy_type));
+								}
 							}
 						}
 					}
@@ -90,7 +94,7 @@ std::vector<reservoir_layer> reservoir_layer::generate_reservoir(const int unit_
 
 // 結合トポロジーや結合重みなどを設定する
 void reservoir_layer::generate_reservoir() {
-
+	J.resize(4000 + 1, std::vector<double>(unit_size + 1));
 	a = { -1.0, -0.6, -0.2, 0.2, 0.6, 1.0 };
 	b = { -1.0,1.0 };
 
@@ -150,8 +154,8 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 	output_node[0][0] = 1.0;
 	for (int n = 1; n <= unit_size; n++) output_node[0][n] = (double)rand_minus1toplus1(mt2);
 
-	double ξ, d;
-	d = 2.0 / (double)unit_size;/////////////////////////////////////////////////////////変更要素////////////////////////////////////////////////////////////////////
+	double ξ;
+	//d = 60.0 / (double)unit_size;/////////////////////////////////////////////////////////変更要素////////////////////////////////////////////////////////////////////
 	ξ = log(1.0 + d);
 
 	//マスク信号を加えた最終的な入力信号
@@ -166,11 +170,14 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 		J[0][n] = input_signal_strength[n];
 		output_node[0][n] = activation_function(output_node[0][n], 0.0, node_type[n], J[0][n]);
 
-		//output_node[0][n] *= d / (1.0 + d); /////////////////////////変更要素//////////////////////
-		output_node[0][n] *= (1.0 - exp(-ξ));///////////////////////////////////////////////////////
-
-		//output_node[0][n] += (1.0 / (1.0 + d)) * (output_node[0][n - 1]);//////////////////////変更要素////////////////////
-		output_node[0][n] += exp(-ξ) * (output_node[0][n - 1]);/////////////////////////////////////////////////////////////
+		if (toporogy_type == "linear") {
+			output_node[0][n] *= d / (1.0 + d); /////////////////////////変更要素//////////////////////
+			output_node[0][n] += (1.0 / (1.0 + d)) * (output_node[0][n - 1]);//////////////////////変更要素////////////////////
+		}
+		else {
+			output_node[0][n] *= (1.0 - exp(-ξ));///////////////////////////////////////////////////////
+			output_node[0][n] += exp(-ξ) * (output_node[0][n - 1]);/////////////////////////////////////////////////////////////
+		}
 	}
 
 	//通常の時間遅延システム型時間発展式
@@ -179,13 +186,39 @@ void reservoir_layer::reservoir_update(const std::vector<double>& input_signal, 
 		for (int n = 1; n <= unit_size; n++) {
 			output_node[t][n] = activation_function(output_node[t - 1][n], 0.0, node_type[n], J[t][n]);
 
-			//output_node[t][n] *= (d / (1.0 + d));//////////////変更要素//////////////
-			output_node[t][n] *= (1.0 - exp(-ξ));/////////////////////////////////////
-
-			//output_node[t][n] += (1.0 / (1.0 + d)) * (output_node[t][n - 1]);//////////変更要素////////////
-			output_node[t][n] += exp(-ξ) * (output_node[t][n - 1]);/////////////////////////////////////////
+			if (toporogy_type == "linear") {
+				output_node[t][n] *= (d / (1.0 + d));//////////////変更要素//////////////
+				output_node[t][n] += (1.0 / (1.0 + d)) * (output_node[t][n - 1]);//////////変更要素////////////
+			}
+			else {
+				output_node[t][n] *= (1.0 - exp(-ξ));/////////////////////////////////////
+				output_node[t][n] += exp(-ξ) * (output_node[t][n - 1]);/////////////////////////////////////////
+			}
 		}
 	}
+
+	//int j = 60;
+	//for (int t = 1; t <= t_size; t++) {
+	//	output_node[t][0] = output_node[t - 1][unit_size];
+	//	for (int n = 1; n <= unit_size; n++) {
+	//		if (t == 1) {
+	//			output_node[t][n] = activation_function(output_node[t - 1][n], 0.0, node_type[n], J[t][n]);
+	//		}
+	//		else if (t >= 2) {
+	//			if (n >= j + 1) {
+	//				output_node[t][n] = activation_function(output_node[t - 1][n], output_node[t - 1][n - j], node_type[n], J[t][n]);
+	//			}
+	//			else {
+	//				output_node[t][n] = activation_function(output_node[t - 1][n], output_node[t - 2][unit_size - j + n], node_type[n], J[t][n]);
+	//			}
+	//		}
+	//		output_node[t][n] *= (d / (1.0 + d));////////////変更要素//////////////
+	//		//output_node[t][n] *= (1.0 - exp(-ξ));///////////////////////////////////
+
+	//		output_node[t][n] += (1.0 / (1.0 + d)) * (output_node[t][n - 1]);///////////変更要素///////////////
+	//		//output_node[t][n] += exp(-ξ) * (output_node[t][n - 1]);/////////////////////////////////////////////
+	//	}
+	//}
 }
 
 
@@ -231,9 +264,8 @@ bool reservoir_layer::calc_echo_state_property(const std::vector<double>& input_
 	for (int t = wash_out - 99; t <= wash_out; t++) {
 		for (int n = 1; n <= unit_size; n++) {
 			double err = (output_node1[t][n] - output_node2[t][n]);
-			if (std::max(abs(output_node1[t][n]), abs(output_node2[t][n])) > 1000) {
+			if (std::max(abs(output_node1[t][n]), abs(output_node2[t][n])) > 10.0) {
 				err += 100000.0;
-				//std::cerr << output_node1[t][n] << "," << output_node2[t][n] << "," << weight_factor << std::endl;
 				err_sum += err * err;
 				break;
 			}
@@ -241,9 +273,9 @@ bool reservoir_layer::calc_echo_state_property(const std::vector<double>& input_
 		}
 	}
 	// ノード初期値によって状態が等しくなるならば、EchoStatePropertyを持つ
-	double err_ave = err_sum / (unit_size);
+	double err_ave = err_sum / (unit_size + 1);
 	//std::cerr << err_sum << std::endl;
-	return is_echo_state_property = (err_ave <= 10.0);
+	return is_echo_state_property = (err_ave <= 0.1);
 }
 
 double reservoir_layer::activation_function(const double x1, const double x2, const int type, const double J) {

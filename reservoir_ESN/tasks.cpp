@@ -127,7 +127,7 @@ void tasks::generate_approx_task() {
 				double sum = 0.0;
 				for (int r = std::max<int>(0, t - tmp_tau); r <= t; r++) sum += input_signal[r];
 				double average = sum / sqrt((tmp_tau + 1.0));
-				task.output_signal[t] = sin(tmp_nu * PI * average + 0.25 * PI);
+				task.output_signal[t] = sin(tmp_nu * PI * average);
 			}
 			output_tasks.push_back(task);
 		}

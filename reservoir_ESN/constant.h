@@ -13,5 +13,5 @@
 #define NON_LINEAR (1)
 #define MAX_UNIT_SIZE (200)
 #define MAX_TASK_SIZE (1000)
-#define THREAD_NUM (1)
+#define THREAD_NUM (12)
 #define SUBSET_SIZE (THREAD_NUM * 1)

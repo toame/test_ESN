@@ -113,20 +113,20 @@ public:
 
 	void reservoir_perf_output(std::ofstream& outputfile) {
 		const double input_signal_factor = reservoir.input_signal_factor;
-		const double weight_factor = reservoir.weight_factor;
+		const double input_gain = reservoir.input_gain;
+		const double feed_gain = reservoir.feed_gain;
 		const int seed = reservoir.seed;
-		double bias_factor1 = reservoir.bias_factor;
-		if (bias_factor1 < 0) bias_factor1 = input_signal_factor * weight_factor;
 		const double p = reservoir.p;
 		std::string function_name = reservoir.nonlinear_name;
 		outputfile << reservoir.toporogy_type << ","
-				   << function_name << ","
-				   << seed << ","
-				   << reservoir.unit_size << ","
-				   << p << ","
-				   << input_signal_factor << ","
-				   << bias_factor1 << ","
-				   << weight_factor;
+			<< function_name << ","
+			<< seed << ","
+			<< reservoir.unit_size << ","
+			<< p << ","
+			<< input_signal_factor << ","
+			<< input_gain << ","
+			<< feed_gain << ","
+			<< reservoir.d;
 		outputfile << "," << L << "," << L_cut << "," << NL << "," << NL_old << "," << NL1_old << "," << NL_old_cut1 << "," << NL_old_cut2;
 
 		for (int i = 2; i <= 10; i++) outputfile << "," << sub_NL_old[i];

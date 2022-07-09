@@ -67,7 +67,7 @@ int main(void) {
 		}
 
 		// 設定出力
-		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,bias_factor,weight_factor,L,L_cut,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
+		outputfile << "topology,function_name,seed,unit_size,p,input_signal_factor,input_gain,feed_gain,d,L,L_cut,NL,NL_old,NL1_old,NL_old_cut1,NL_old_cut2";
 		for (int i = 2; i <= 10; i++) outputfile << ",NL_old_" << std::to_string(i);
 		for (int task = 0; task < TASK_NUM; task++) {
 			for (int i = 0; i < reservoir_task[task][TRAIN].output_tasks.size(); i++) {
