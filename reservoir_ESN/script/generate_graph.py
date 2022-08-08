@@ -28,7 +28,7 @@ for path in args.data:
             #df2 = df[df["topology"] == topology]
             df2 = df[df["L"] > 0.5]
             # df2 = df2[df2["feed_gain"] < 0.15]
-            print(df2["feed_gain"])
+            # print(df2["feed_gain"])
             for task in args.taskes:
                 fig = plt.figure()
                 ax1 = fig.add_subplot(1, 3, 1)
@@ -36,7 +36,7 @@ for path in args.data:
                 ax3 = fig.add_subplot(1, 3, 3)
                 for num, function_name, bias, ax in [(1, "all", True, ax1), (2, "TD_exp", True, ax2), (3, "TD_ikeda", True, ax3)]:
                     df3 = df2[df2["function_name"] == function_name]
-
+                    # df3 = df2
                     # if bias:
                     #     df3 = df3[df2["bias_factor"] != 0]
                     # else:
@@ -44,8 +44,9 @@ for path in args.data:
                     #df3.to_csv(task + ".csv")
                     if function_name == "all":
                         df3 = df2
-                    data_x = df3["NL_old_2"] + df3["L"]
-                    if NL_type == "NL_test":
+                    # data_x = df3["NL_old_2"] + df3["L_test"]
+                    data_x = df3["L_test"]
+                    if NL_type == "NL_test" and False:
                         data_y = df3["NL_old_2"] + df3["NL_old_3"] + df3["NL_old_4"] + df3["NL_old_5"] + df3["NL_old_6"]
                     else:
                         data_y = df3[NL_type]

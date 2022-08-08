@@ -113,21 +113,25 @@ void add_NL() {
             int d_sum = 0;
             int tau = 0;
             int max_d = 0;
+            int kind = 0;
             for(int i = 0; i < d.size(); i++) {
                 d_sum += d[i];
                 max_d = max<int>(max_d, d[i]);
                 if (d[i] > 0) {
                     tau = max(i, tau);
+                    kind++;
                 }
             }
             double tmp_NL = stod(elements[mp[task_name]]);
 
-            //NL += d_sum/(double)(tau + 1.0) * max(0.0, tmp_NL);
-            NL += d_sum * max(0.0, tmp_NL);
-            if(d_sum == 2) {
-                //L += tau/(double)(tau + d_sum - 1.0) * max(0.0, tmp_NL);
-                L += d_sum * max(0.0, tmp_NL);
-            }
+            NL += d_sum/(double)(tau + 1.0) * max(0.0, tmp_NL);
+            L += tau/(double)(tau + d_sum - 1.0) * max(0.0, tmp_NL);
+            //L += d_sum * max(0.0, tmp_NL);
+            // NL += d_sum * max(0.0, tmp_NL);
+            // if(d_sum == 2 && kind == 2) {
+            //     //L += tau/(double)(tau + d_sum - 1.0) * max(0.0, tmp_NL);
+            //     L += d_sum * max(0.0, tmp_NL);
+            // }
         }
         r_data[r].back() = (to_string(NL));
         for(int i = 0; i < elements.size() - 2;i++) {
